@@ -1,0 +1,32 @@
+{
+    "dependencies": {
+        "@stores.com/http-error": "~1.0.0",
+        "memory-cache": "~0.2.0"
+    },
+    "description": "FedEx REST API client for OAuth tokens and rate quotes.",
+    "devDependencies": {
+        "@eslint/js": "*",
+        "globals": "*"
+    },
+    "keywords": [
+        "fedex",
+        "logistics",
+        "rates",
+        "shipping"
+    ],
+    "license": "MIT",
+    "name": "@stores.com/fedex",
+    "publishConfig": {
+        "access": "public"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/stores-com/fedex.git"
+    },
+    "scripts": {
+        "coveralls": "node --test --test-force-exit --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info && coveralls < lcov.info",
+        "test": "node --test --test-force-exit --test-reporter=spec",
+        "test:only": "node --test --test-force-exit --test-only --test-reporter=spec"
+    },
+    "version": "0.1.0"
+}
