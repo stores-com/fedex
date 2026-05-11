@@ -4,6 +4,8 @@ const { setTimeout: sleep } = require('node:timers/promises');
 
 const FedEx = require('../index');
 
+const MOCK_URL = 'https://mocks.fedex.com';
+
 // Short retry for riding out transient blips
 async function retry(fn, attempts = 5) {
     for (let i = 1; i <= attempts; i++) {
@@ -19,57 +21,12 @@ async function retry(fn, attempts = 5) {
     }
 }
 
-test('getAccessToken', { concurrency: true }, async (t) => {
-    t.test('should return an error for invalid url', async () => {
-        const fedex = new FedEx({
-            url: 'invalid'
-        });
-
-        await assert.rejects(fedex.getAccessToken(), { message: 'Failed to parse URL from invalid/oauth/token' });
+function mockOAuthResponse() {
+    return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+        headers: { 'Content-Type': 'application/json' },
+        status: 200
     });
-
-    t.test('should return an error for non 200 status code', async () => {
-        const fedex = new FedEx({
-            url: 'https://httpbin.org/status/500#'
-        });
-
-        await assert.rejects(fedex.getAccessToken(), (err) => {
-            assert.strictEqual(err.name, 'HttpError');
-            assert.match(err.message, /^500/);
-            return true;
-        });
-    });
-
-    t.test('should return a valid access token', async () => {
-        const fedex = new FedEx({
-            account_number: process.env.FEDEX_ACCOUNT_NUMBER,
-            api_key: process.env.FEDEX_API_KEY,
-            secret_key: process.env.FEDEX_SECRET_KEY,
-            url: process.env.FEDEX_URL
-        });
-
-        const accessToken = await fedex.getAccessToken();
-
-        assert(accessToken);
-        assert(accessToken.access_token);
-        assert(accessToken.expires_in);
-        assert.strictEqual(accessToken.token_type, 'bearer');
-    });
-
-    t.test('should return the same access token on subsequent calls', async () => {
-        const fedex = new FedEx({
-            account_number: process.env.FEDEX_ACCOUNT_NUMBER,
-            api_key: process.env.FEDEX_API_KEY,
-            secret_key: process.env.FEDEX_SECRET_KEY,
-            url: process.env.FEDEX_URL
-        });
-
-        const accessToken1 = await fedex.getAccessToken();
-        const accessToken2 = await fedex.getAccessToken();
-
-        assert.deepStrictEqual(accessToken2, accessToken1);
-    });
-});
+}
 
 function shipment({ serviceType, smartPost } = {}) {
     const body = {
@@ -124,6 +81,58 @@ function shipment({ serviceType, smartPost } = {}) {
     return body;
 }
 
+test('getAccessToken', { concurrency: true }, async (t) => {
+    t.test('should return an error for invalid url', async () => {
+        const fedex = new FedEx({
+            url: 'invalid'
+        });
+
+        await assert.rejects(fedex.getAccessToken(), { message: 'Failed to parse URL from invalid/oauth/token' });
+    });
+
+    t.test('should return an error for non 200 status code', async () => {
+        const fedex = new FedEx({
+            url: 'https://httpbin.org/status/500#'
+        });
+
+        await assert.rejects(fedex.getAccessToken(), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            assert.match(err.message, /^500/);
+            return true;
+        });
+    });
+
+    t.test('should return a valid access token', async () => {
+        const fedex = new FedEx({
+            account_number: process.env.FEDEX_ACCOUNT_NUMBER,
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const accessToken = await fedex.getAccessToken();
+
+        assert(accessToken);
+        assert(accessToken.access_token);
+        assert(accessToken.expires_in);
+        assert.strictEqual(accessToken.token_type, 'bearer');
+    });
+
+    t.test('should return the same access token on subsequent calls', async () => {
+        const fedex = new FedEx({
+            account_number: process.env.FEDEX_ACCOUNT_NUMBER,
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const accessToken1 = await fedex.getAccessToken();
+        const accessToken2 = await fedex.getAccessToken();
+
+        assert.deepStrictEqual(accessToken2, accessToken1);
+    });
+});
+
 test('rates', { concurrency: true }, async (t) => {
     t.test('should return rate quotes for a Ground shipment', async () => {
         const fedex = new FedEx({
@@ -170,5 +179,53 @@ test('rates', { concurrency: true }, async (t) => {
         assert(body.transactionId);
         assert(body.output);
         assert(Array.isArray(body.output.rateReplyDetails));
+    });
+});
+
+test('rates (mocked)', async (t) => {
+    t.test('should throw HttpError for non 2xx response', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return mockOAuthResponse();
+            }
+
+            if (url.endsWith('/rate/v1/rates/quotes')) {
+                return new Response('', { status: 500, statusText: 'Internal Server Error' });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+
+        await assert.rejects(fedex.rates(shipment()), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            assert.match(err.message, /^500/);
+            return true;
+        });
+    });
+
+    t.test('should throw Error for 200 response with errors envelope', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return mockOAuthResponse();
+            }
+
+            if (url.endsWith('/rate/v1/rates/quotes')) {
+                return new Response(JSON.stringify({
+                    errors: [{ code: 'RATING.INVALID', message: 'Invalid account number' }],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+
+        await assert.rejects(fedex.rates(shipment()), { message: 'RATING.INVALID: Invalid account number' });
     });
 });
