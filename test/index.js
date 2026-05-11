@@ -1,7 +1,23 @@
 const assert = require('node:assert');
 const test = require('node:test');
+const { setTimeout: sleep } = require('node:timers/promises');
 
 const FedEx = require('../index');
+
+// Short retry for riding out transient blips
+async function retry(fn, attempts = 5) {
+    for (let i = 1; i <= attempts; i++) {
+        try {
+            return await fn();
+        } catch (err) {
+            if (i === attempts) {
+                throw err;
+            }
+
+            await sleep(1000);
+        }
+    }
+}
 
 test('getAccessToken', { concurrency: true }, async (t) => {
     t.test('should return an error for invalid url', async () => {
@@ -117,7 +133,7 @@ test('rates', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await fedex.rates(shipment());
+        const body = await retry(() => fedex.rates(shipment()));
 
         assert(body);
         assert(body.transactionId);
@@ -133,7 +149,7 @@ test('rates', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await fedex.rates(shipment({ serviceType: 'SMART_POST', smartPost: true }));
+        const body = await retry(() => fedex.rates(shipment({ serviceType: 'SMART_POST', smartPost: true })));
 
         assert(body);
         assert(body.transactionId);
@@ -148,7 +164,7 @@ test('rates', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await fedex.rates(shipment(), { account_number: process.env.FEDEX_ACCOUNT_NUMBER });
+        const body = await retry(() => fedex.rates(shipment(), { account_number: process.env.FEDEX_ACCOUNT_NUMBER }));
 
         assert(body);
         assert(body.transactionId);
