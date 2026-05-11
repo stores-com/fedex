@@ -64,6 +64,8 @@ console.log(accessToken);
 
 Request rate quotes for a shipment. The caller supplies only the `requestedShipment` body; the package fills the top-level `accountNumber` and `rateRequestControlParameters` envelope.
 
+Pass `options.account_number` to rate against an account other than the one provided to the constructor (useful when one OAuth identity covers multiple accounts).
+
 See: https://developer.fedex.com/api/en-us/catalog/rate.html
 
 ```javascript

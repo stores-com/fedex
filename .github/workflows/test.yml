@@ -29,6 +29,7 @@ jobs:
         FEDEX_ACCOUNT_NUMBER: ${{ secrets.FEDEX_ACCOUNT_NUMBER }}
         FEDEX_API_KEY: ${{ secrets.FEDEX_API_KEY }}
         FEDEX_SECRET_KEY: ${{ secrets.FEDEX_SECRET_KEY }}
+        FEDEX_SMART_POST_HUB_ID: ${{ secrets.FEDEX_SMART_POST_HUB_ID }}
         FEDEX_URL: ${{ secrets.FEDEX_URL }}
       run: |
         node --test --test-force-exit --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info

@@ -55,8 +55,61 @@ test('getAccessToken', { concurrency: true }, async (t) => {
     });
 });
 
+function shipment({ serviceType, smartPost } = {}) {
+    const body = {
+        packagingType: 'YOUR_PACKAGING',
+        pickupType: 'USE_SCHEDULED_PICKUP',
+        preferredCurrency: 'USD',
+        rateRequestType: ['ACCOUNT'],
+        recipient: {
+            address: {
+                city: 'New York',
+                countryCode: 'US',
+                postalCode: '10118',
+                residential: false,
+                stateOrProvinceCode: 'NY',
+                streetLines: ['350 5th Ave']
+            },
+            contact: {
+                personName: 'Test Recipient',
+                phoneNumber: '0000000000'
+            }
+        },
+        requestedPackageLineItems: [{
+            groupPackageCount: 1,
+            weight: { units: 'LB', value: smartPost ? 0.5 : 5 }
+        }],
+        serviceType: serviceType || 'FEDEX_GROUND',
+        shipDateStamp: new Date().toISOString().slice(0, 10),
+        shipper: {
+            address: {
+                city: 'Lindon',
+                countryCode: 'US',
+                postalCode: '84042',
+                stateOrProvinceCode: 'UT',
+                streetLines: ['275 W 200 N']
+            },
+            contact: {
+                companyName: 'Test Shipper',
+                phoneNumber: '0000000000'
+            }
+        },
+        totalPackageCount: 1
+    };
+
+    if (smartPost) {
+        body.smartPostInfoDetail = {
+            ancillaryEndorsement: 'ADDRESS_CORRECTION',
+            hubId: process.env.FEDEX_SMART_POST_HUB_ID,
+            indicia: 'PRESORTED_STANDARD'
+        };
+    }
+
+    return body;
+}
+
 test('rates', { concurrency: true }, async (t) => {
-    t.test('should return rate quotes for a valid shipment', async () => {
+    t.test('should return rate quotes for a Ground shipment', async () => {
         const fedex = new FedEx({
             account_number: process.env.FEDEX_ACCOUNT_NUMBER,
             api_key: process.env.FEDEX_API_KEY,
@@ -64,46 +117,38 @@ test('rates', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await fedex.rates({
-            packagingType: 'YOUR_PACKAGING',
-            pickupType: 'USE_SCHEDULED_PICKUP',
-            preferredCurrency: 'USD',
-            rateRequestType: ['ACCOUNT'],
-            recipient: {
-                address: {
-                    city: 'New York',
-                    countryCode: 'US',
-                    postalCode: '10118',
-                    residential: false,
-                    stateOrProvinceCode: 'NY',
-                    streetLines: ['350 5th Ave']
-                },
-                contact: {
-                    personName: 'Test Recipient',
-                    phoneNumber: '0000000000'
-                }
-            },
-            requestedPackageLineItems: [{
-                groupPackageCount: 1,
-                weight: { units: 'LB', value: 5 }
-            }],
-            serviceType: 'FEDEX_GROUND',
-            shipDateStamp: new Date().toISOString().slice(0, 10),
-            shipper: {
-                address: {
-                    city: 'Lindon',
-                    countryCode: 'US',
-                    postalCode: '84042',
-                    stateOrProvinceCode: 'UT',
-                    streetLines: ['275 W 200 N']
-                },
-                contact: {
-                    companyName: 'Test Shipper',
-                    phoneNumber: '0000000000'
-                }
-            },
-            totalPackageCount: 1
+        const body = await fedex.rates(shipment());
+
+        assert(body);
+        assert(body.transactionId);
+        assert(body.output);
+        assert(Array.isArray(body.output.rateReplyDetails));
+    });
+
+    t.test('should return rate quotes for a SmartPost shipment', async () => {
+        const fedex = new FedEx({
+            account_number: process.env.FEDEX_ACCOUNT_NUMBER,
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
         });
+
+        const body = await fedex.rates(shipment({ serviceType: 'SMART_POST', smartPost: true }));
+
+        assert(body);
+        assert(body.transactionId);
+        assert(body.output);
+        assert(Array.isArray(body.output.rateReplyDetails));
+    });
+
+    t.test('should accept an account_number override', async () => {
+        const fedex = new FedEx({
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const body = await fedex.rates(shipment(), { account_number: process.env.FEDEX_ACCOUNT_NUMBER });
 
         assert(body);
         assert(body.transactionId);
