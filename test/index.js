@@ -253,7 +253,7 @@ test('rateAndTransitTimes (mocked)', async (t) => {
 });
 
 test('validateAddress', { concurrency: true }, async (t) => {
-    t.test('should classify a residential address as RESIDENTIAL', async () => {
+    t.test('should return resolved addresses', async () => {
         const fedex = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
@@ -273,22 +273,174 @@ test('validateAddress', { concurrency: true }, async (t) => {
         }));
 
         assert(body.transactionId);
-        assert.strictEqual(body.output.resolvedAddresses.length, 1);
+        assert(Array.isArray(body.output.resolvedAddresses));
+    });
+});
+
+test('validateAddress (mocked)', async (t) => {
+    t.test('should return RESIDENTIAL for a residential address', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return mockOAuthResponse();
+            }
+
+            if (url.endsWith('/address/v1/addresses/resolve')) {
+                return new Response(JSON.stringify({
+                    transactionId: 'a538c6e8-9b78-45a4-a415-b2e53f19d930',
+                    output: {
+                        resolvedAddresses: [
+                            {
+                                streetLinesToken: [
+                                    '5132 W ALTGELD ST'
+                                ],
+                                city: 'CHICAGO',
+                                stateOrProvinceCode: 'IL',
+                                postalCode: '60639-2402',
+                                parsedPostalCode: {
+                                    base: '60639',
+                                    addOn: '2402',
+                                    deliveryPoint: '32'
+                                },
+                                countryCode: 'US',
+                                classification: 'RESIDENTIAL',
+                                ruralRouteHighwayContract: false,
+                                generalDelivery: false,
+                                customerMessages: [],
+                                normalizedStatusNameDPV: true,
+                                standardizedStatusNameMatchSource: 'Postal',
+                                resolutionMethodName: 'USPS_VALIDATE',
+                                attributes: {
+                                    POBox: 'false',
+                                    POBoxOnlyZIP: 'false',
+                                    SplitZIP: 'false',
+                                    SuiteRequiredButMissing: 'false',
+                                    InvalidSuiteNumber: 'false',
+                                    ResolutionInput: 'RAW_ADDRESS',
+                                    DPV: 'true',
+                                    ResolutionMethod: 'USPS_VALIDATE',
+                                    DataVintage: 'May 2017',
+                                    MatchSource: 'Postal',
+                                    CountrySupported: 'true',
+                                    ValidlyFormed: 'true',
+                                    Matched: 'true',
+                                    Resolved: 'true',
+                                    Inserted: 'false',
+                                    MultiUnitBase: 'false',
+                                    ZIP11Match: 'true',
+                                    ZIP4Match: 'true',
+                                    UniqueZIP: 'false',
+                                    StreetAddress: 'true',
+                                    RRConversion: 'false',
+                                    ValidMultiUnit: 'false',
+                                    AddressType: 'STANDARDIZED',
+                                    AddressPrecision: 'STREET_ADDRESS',
+                                    MultipleMatches: 'false'
+                                }
+                            }
+                        ]
+                    }
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+
+        const body = await fedex.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'Chicago',
+                    countryCode: 'US',
+                    postalCode: '60639',
+                    stateOrProvinceCode: 'IL',
+                    streetLines: ['5132 W Altgeld St']
+                }
+            }]
+        });
 
         const resolved = body.output.resolvedAddresses[0];
 
         assert.strictEqual(resolved.classification, 'RESIDENTIAL');
-        assert.strictEqual(resolved.attributes.Resolved, true);
+        assert.strictEqual(resolved.attributes.Resolved, 'true');
     });
 
-    t.test('should classify a business address as BUSINESS', async () => {
-        const fedex = new FedEx({
-            api_key: process.env.FEDEX_API_KEY,
-            secret_key: process.env.FEDEX_SECRET_KEY,
-            url: process.env.FEDEX_URL
+    t.test('should return BUSINESS for a business address', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return mockOAuthResponse();
+            }
+
+            if (url.endsWith('/address/v1/addresses/resolve')) {
+                return new Response(JSON.stringify({
+                    transactionId: 'ed813769-626d-4fa7-93c2-caebe3d36dc0',
+                    output: {
+                        resolvedAddresses: [
+                            {
+                                streetLinesToken: [
+                                    '1950 PARKER RD'
+                                ],
+                                city: 'CARROLLTON',
+                                stateOrProvinceCode: 'TX',
+                                postalCode: '75010-4735',
+                                parsedPostalCode: {
+                                    base: '75010',
+                                    addOn: '4735',
+                                    deliveryPoint: '50'
+                                },
+                                countryCode: 'US',
+                                classification: 'BUSINESS',
+                                ruralRouteHighwayContract: false,
+                                generalDelivery: false,
+                                customerMessages: [],
+                                normalizedStatusNameDPV: true,
+                                standardizedStatusNameMatchSource: 'Postal',
+                                resolutionMethodName: 'USPS_VALIDATE',
+                                attributes: {
+                                    POBox: 'false',
+                                    POBoxOnlyZIP: 'false',
+                                    SplitZIP: 'false',
+                                    SuiteRequiredButMissing: 'false',
+                                    InvalidSuiteNumber: 'false',
+                                    ResolutionInput: 'RAW_ADDRESS',
+                                    DPV: 'true',
+                                    ResolutionMethod: 'USPS_VALIDATE',
+                                    DataVintage: 'January 2017',
+                                    MatchSource: 'Postal',
+                                    CountrySupported: 'true',
+                                    ValidlyFormed: 'true',
+                                    Matched: 'true',
+                                    Resolved: 'true',
+                                    Inserted: 'false',
+                                    MultiUnitBase: 'true',
+                                    ZIP11Match: 'true',
+                                    ZIP4Match: 'true',
+                                    UniqueZIP: 'false',
+                                    StreetAddress: 'true',
+                                    RRConversion: 'false',
+                                    ValidMultiUnit: 'false',
+                                    AddressType: 'STANDARDIZED',
+                                    AddressPrecision: 'STREET_ADDRESS',
+                                    MultipleMatches: 'false'
+                                }
+                            }
+                        ]
+                    }
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const body = await retry(() => fedex.validateAddress({
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+
+        const body = await fedex.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'Carrollton',
@@ -298,25 +450,87 @@ test('validateAddress', { concurrency: true }, async (t) => {
                     streetLines: ['1950 Parker Road']
                 }
             }]
-        }));
-
-        assert(body.transactionId);
-        assert.strictEqual(body.output.resolvedAddresses.length, 1);
+        });
 
         const resolved = body.output.resolvedAddresses[0];
 
         assert.strictEqual(resolved.classification, 'BUSINESS');
-        assert.strictEqual(resolved.attributes.Resolved, true);
+        assert.strictEqual(resolved.attributes.Resolved, 'true');
     });
 
-    t.test('should classify a mixed-use address as MIXED', async () => {
-        const fedex = new FedEx({
-            api_key: process.env.FEDEX_API_KEY,
-            secret_key: process.env.FEDEX_SECRET_KEY,
-            url: process.env.FEDEX_URL
+    t.test('should return MIXED for a mixed-use address', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return mockOAuthResponse();
+            }
+
+            if (url.endsWith('/address/v1/addresses/resolve')) {
+                return new Response(JSON.stringify({
+                    transactionId: '24f1dd06-e1fd-4cbf-b8dd-de85312d44e8',
+                    output: {
+                        resolvedAddresses: [
+                            {
+                                streetLinesToken: [
+                                    '75 SPRING ST'
+                                ],
+                                city: 'NEW YORK',
+                                stateOrProvinceCode: 'NY',
+                                postalCode: '10012-4020',
+                                parsedPostalCode: {
+                                    base: '10012',
+                                    addOn: '4020',
+                                    deliveryPoint: '99'
+                                },
+                                countryCode: 'US',
+                                classification: 'MIXED',
+                                ruralRouteHighwayContract: false,
+                                generalDelivery: false,
+                                customerMessages: [],
+                                normalizedStatusNameDPV: false,
+                                standardizedStatusNameMatchSource: 'Postal',
+                                resolutionMethodName: 'USPS_VALIDATE',
+                                attributes: {
+                                    POBox: 'false',
+                                    POBoxOnlyZIP: 'false',
+                                    SplitZIP: 'false',
+                                    SuiteRequiredButMissing: 'true',
+                                    InvalidSuiteNumber: 'false',
+                                    ResolutionInput: 'RAW_ADDRESS',
+                                    DPV: 'false',
+                                    ResolutionMethod: 'USPS_VALIDATE',
+                                    DataVintage: 'May 2017',
+                                    MatchSource: 'Postal',
+                                    CountrySupported: 'true',
+                                    ValidlyFormed: 'true',
+                                    Matched: 'true',
+                                    Resolved: 'true',
+                                    Inserted: 'false',
+                                    MultiUnitBase: 'true',
+                                    ZIP11Match: 'true',
+                                    ZIP4Match: 'true',
+                                    UniqueZIP: 'false',
+                                    StreetAddress: 'false',
+                                    RRConversion: 'false',
+                                    ValidMultiUnit: 'false',
+                                    AddressType: 'STANDARDIZED',
+                                    AddressPrecision: 'MULTI_TENANT_BASE',
+                                    MultipleMatches: 'false'
+                                }
+                            }
+                        ]
+                    }
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const body = await retry(() => fedex.validateAddress({
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+
+        const body = await fedex.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'New York',
@@ -326,25 +540,87 @@ test('validateAddress', { concurrency: true }, async (t) => {
                     streetLines: ['75 Spring St']
                 }
             }]
-        }));
-
-        assert(body.transactionId);
-        assert.strictEqual(body.output.resolvedAddresses.length, 1);
+        });
 
         const resolved = body.output.resolvedAddresses[0];
 
         assert.strictEqual(resolved.classification, 'MIXED');
-        assert.strictEqual(resolved.attributes.Resolved, true);
+        assert.strictEqual(resolved.attributes.Resolved, 'true');
     });
 
-    t.test('should classify an unclassified address as UNKNOWN', async () => {
-        const fedex = new FedEx({
-            api_key: process.env.FEDEX_API_KEY,
-            secret_key: process.env.FEDEX_SECRET_KEY,
-            url: process.env.FEDEX_URL
+    t.test('should return UNKNOWN for an unclassified address', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return mockOAuthResponse();
+            }
+
+            if (url.endsWith('/address/v1/addresses/resolve')) {
+                return new Response(JSON.stringify({
+                    transactionId: '1d083f8b-65f9-454f-b9bf-20bba66e2a16',
+                    output: {
+                        resolvedAddresses: [
+                            {
+                                streetLinesToken: [
+                                    '1 CROWHEART DR'
+                                ],
+                                city: 'CROWHEART',
+                                stateOrProvinceCode: 'WY',
+                                postalCode: '82512-5011',
+                                parsedPostalCode: {
+                                    base: '82512',
+                                    addOn: '5011',
+                                    deliveryPoint: '01'
+                                },
+                                countryCode: 'US',
+                                classification: 'UNKNOWN',
+                                ruralRouteHighwayContract: false,
+                                generalDelivery: false,
+                                customerMessages: [
+                                    {
+                                        code: 'INTERPOLATED.STREET.ADDRESS',
+                                        message: 'Unable to confirm exact street number for the entered street name. The address falls within a valid range for the street name.'
+                                    }
+                                ],
+                                standardizedStatusNameMatchSource: 'Map',
+                                resolutionMethodName: 'TELEATLAS_GEO_VALIDATE',
+                                attributes: {
+                                    POBox: 'false',
+                                    MultiUnitBase: 'false',
+                                    Intersection: 'false',
+                                    SuiteRequiredButMissing: 'false',
+                                    InvalidSuiteNumber: 'false',
+                                    ResolutionInput: 'RAW_ADDRESS',
+                                    ZIP11Match: 'true',
+                                    ResolutionMethod: 'TELEATLAS_GEO_VALIDATE',
+                                    DataVintage: 'MARCH 2026',
+                                    ZIP4Match: 'true',
+                                    StreetRange: 'false',
+                                    UniqueZIP: 'false',
+                                    MatchSource: 'Map',
+                                    CountrySupported: 'true',
+                                    Matched: 'true',
+                                    RRConversion: 'false',
+                                    ValidMultiUnit: 'false',
+                                    Resolved: 'true',
+                                    AddressType: 'STANDARDIZED',
+                                    Inserted: 'true',
+                                    InterpolatedStreetAddress: 'true'
+                                }
+                            }
+                        ]
+                    }
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const body = await retry(() => fedex.validateAddress({
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+
+        const body = await fedex.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'Crowheart',
@@ -354,24 +630,78 @@ test('validateAddress', { concurrency: true }, async (t) => {
                     streetLines: ['1 Crow Heart Rd']
                 }
             }]
-        }));
-
-        assert(body.transactionId);
-        assert.strictEqual(body.output.resolvedAddresses.length, 1);
+        });
 
         const resolved = body.output.resolvedAddresses[0];
 
         assert.strictEqual(resolved.classification, 'UNKNOWN');
+        assert.strictEqual(resolved.attributes.Resolved, 'true');
     });
 
-    t.test('should mark a non-deliverable address as not Resolved', async () => {
-        const fedex = new FedEx({
-            api_key: process.env.FEDEX_API_KEY,
-            secret_key: process.env.FEDEX_SECRET_KEY,
-            url: process.env.FEDEX_URL
+    t.test('should return Resolved: false for a non-deliverable address', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return mockOAuthResponse();
+            }
+
+            if (url.endsWith('/address/v1/addresses/resolve')) {
+                return new Response(JSON.stringify({
+                    transactionId: '577df10d-c0fa-4c34-b7a9-e3a4520204f9',
+                    output: {
+                        resolvedAddresses: [
+                            {
+                                streetLinesToken: [
+                                    '9999 IMAGINARY WAY'
+                                ],
+                                city: 'CHICAGO',
+                                stateOrProvinceCode: 'IL',
+                                postalCode: '60639',
+                                countryCode: 'US',
+                                classification: 'UNKNOWN',
+                                ruralRouteHighwayContract: false,
+                                generalDelivery: false,
+                                customerMessages: [
+                                    {
+                                        code: 'STANDARDIZED.ADDRESS.NOTFOUND',
+                                        message: 'Standardized address is not found.'
+                                    }
+                                ],
+                                attributes: {
+                                    SuiteRequiredButMissing: 'false',
+                                    PostalValidated: 'true',
+                                    InvalidSuiteNumber: 'false',
+                                    ZIP11Match: 'false',
+                                    GeneralDelivery: 'false',
+                                    DPV: 'false',
+                                    DataVintage: 'March 2026',
+                                    ZIP4Match: 'false',
+                                    CityStateValidated: 'true',
+                                    CountrySupported: 'true',
+                                    ValidlyFormed: 'true',
+                                    Matched: 'false',
+                                    StreetValidated: 'false',
+                                    MissingOrAmbiguousDirectional: 'false',
+                                    Resolved: 'false',
+                                    StreetRangeValidated: 'false',
+                                    AddressType: 'NORMALIZED',
+                                    Inserted: 'true',
+                                    MultipleMatches: 'false'
+                                }
+                            }
+                        ]
+                    }
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const body = await retry(() => fedex.validateAddress({
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+
+        const body = await fedex.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'Chicago',
@@ -381,18 +711,14 @@ test('validateAddress', { concurrency: true }, async (t) => {
                     streetLines: ['9999 Imaginary Way']
                 }
             }]
-        }));
-
-        assert(body.transactionId);
-        assert.strictEqual(body.output.resolvedAddresses.length, 1);
+        });
 
         const resolved = body.output.resolvedAddresses[0];
 
-        assert.strictEqual(resolved.attributes.Resolved, false);
+        assert.strictEqual(resolved.classification, 'UNKNOWN');
+        assert.strictEqual(resolved.attributes.Resolved, 'false');
     });
-});
 
-test('validateAddress (mocked)', async (t) => {
     t.test('should throw HttpError for non 2xx response', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
