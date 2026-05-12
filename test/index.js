@@ -6,6 +6,21 @@ const async = require('async');
 const FedEx = require('../index');
 
 test('getAccessToken', { concurrency: true }, async (t) => {
+    t.test('should return a valid access token', async () => {
+        const fedex = new FedEx({
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const accessToken = await fedex.getAccessToken();
+
+        assert(accessToken);
+        assert(accessToken.access_token);
+        assert(accessToken.expires_in);
+        assert.strictEqual(accessToken.token_type, 'bearer');
+    });
+
     t.test('should return an error for invalid url', async () => {
         const fedex = new FedEx({
             url: 'invalid'
@@ -24,21 +39,6 @@ test('getAccessToken', { concurrency: true }, async (t) => {
             assert.match(err.message, /^500/);
             return true;
         });
-    });
-
-    t.test('should return a valid access token', async () => {
-        const fedex = new FedEx({
-            api_key: process.env.FEDEX_API_KEY,
-            secret_key: process.env.FEDEX_SECRET_KEY,
-            url: process.env.FEDEX_URL
-        });
-
-        const accessToken = await fedex.getAccessToken();
-
-        assert(accessToken);
-        assert(accessToken.access_token);
-        assert(accessToken.expires_in);
-        assert.strictEqual(accessToken.token_type, 'bearer');
     });
 
     t.test('should return the same access token on subsequent calls', async () => {
@@ -177,8 +177,10 @@ test('rateAndTransitTimes', { concurrency: true }, async (t) => {
 });
 
 test('rateAndTransitTimes (mocked)', async (t) => {
-    t.test('should throw HttpError for non 2xx response', async (t) => {
-        t.mock.method(globalThis, 'fetch', async (url) => {
+    t.test('should send options.customer_transaction_id as x-customer-transaction-id header', async (t) => {
+        let sentHeader;
+
+        t.mock.method(globalThis, 'fetch', async (url, init) => {
             if (url.endsWith('/oauth/token')) {
                 return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
                     headers: { 'Content-Type': 'application/json' },
@@ -187,7 +189,11 @@ test('rateAndTransitTimes (mocked)', async (t) => {
             }
 
             if (url.endsWith('/rate/v1/rates/quotes')) {
-                return new Response('', { status: 500, statusText: 'Internal Server Error' });
+                sentHeader = init.headers['x-customer-transaction-id'];
+                return new Response(JSON.stringify({ output: { rateReplyDetails: [] }, transactionId: 'mock' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             throw new Error(`Unexpected fetch URL: ${url}`);
@@ -195,7 +201,7 @@ test('rateAndTransitTimes (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.rateAndTransitTimes({
+        await fedex.rateAndTransitTimes({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             requestedShipment: {
                 packagingType: 'YOUR_PACKAGING',
@@ -237,11 +243,9 @@ test('rateAndTransitTimes (mocked)', async (t) => {
                 },
                 totalPackageCount: 1
             }
-        }), (err) => {
-            assert.strictEqual(err.name, 'HttpError');
-            assert.match(err.message, /^500/);
-            return true;
-        });
+        }, { customer_transaction_id: 'abc-123' });
+
+        assert.strictEqual(sentHeader, 'abc-123');
     });
 
     t.test('should throw HttpError for 200 response with errors envelope', async (t) => {
@@ -319,10 +323,8 @@ test('rateAndTransitTimes (mocked)', async (t) => {
         });
     });
 
-    t.test('should send options.customer_transaction_id as x-customer-transaction-id header', async (t) => {
-        let sentHeader;
-
-        t.mock.method(globalThis, 'fetch', async (url, init) => {
+    t.test('should throw HttpError for non 2xx response', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
                 return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
                     headers: { 'Content-Type': 'application/json' },
@@ -331,11 +333,7 @@ test('rateAndTransitTimes (mocked)', async (t) => {
             }
 
             if (url.endsWith('/rate/v1/rates/quotes')) {
-                sentHeader = init.headers['x-customer-transaction-id'];
-                return new Response(JSON.stringify({ output: { rateReplyDetails: [] }, transactionId: 'mock' }), {
-                    headers: { 'Content-Type': 'application/json' },
-                    status: 200
-                });
+                return new Response('', { status: 500, statusText: 'Internal Server Error' });
             }
 
             throw new Error(`Unexpected fetch URL: ${url}`);
@@ -343,7 +341,7 @@ test('rateAndTransitTimes (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.rateAndTransitTimes({
+        await assert.rejects(fedex.rateAndTransitTimes({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             requestedShipment: {
                 packagingType: 'YOUR_PACKAGING',
@@ -385,9 +383,11 @@ test('rateAndTransitTimes (mocked)', async (t) => {
                 },
                 totalPackageCount: 1
             }
-        }, { customer_transaction_id: 'abc-123' });
-
-        assert.strictEqual(sentHeader, 'abc-123');
+        }), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            assert.match(err.message, /^500/);
+            return true;
+        });
     });
 });
 
@@ -417,99 +417,6 @@ test('validateAddress', { concurrency: true }, async (t) => {
 });
 
 test('validateAddress (mocked)', async (t) => {
-    t.test('should return RESIDENTIAL for a residential address', async (t) => {
-        t.mock.method(globalThis, 'fetch', async (url) => {
-            if (url.endsWith('/oauth/token')) {
-                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
-                    headers: { 'Content-Type': 'application/json' },
-                    status: 200
-                });
-            }
-
-            if (url.endsWith('/address/v1/addresses/resolve')) {
-                return new Response(JSON.stringify({
-                    transactionId: 'a538c6e8-9b78-45a4-a415-b2e53f19d930',
-                    output: {
-                        resolvedAddresses: [
-                            {
-                                streetLinesToken: [
-                                    '5132 W ALTGELD ST'
-                                ],
-                                city: 'CHICAGO',
-                                stateOrProvinceCode: 'IL',
-                                postalCode: '60639-2402',
-                                parsedPostalCode: {
-                                    base: '60639',
-                                    addOn: '2402',
-                                    deliveryPoint: '32'
-                                },
-                                countryCode: 'US',
-                                classification: 'RESIDENTIAL',
-                                ruralRouteHighwayContract: false,
-                                generalDelivery: false,
-                                customerMessages: [],
-                                normalizedStatusNameDPV: true,
-                                standardizedStatusNameMatchSource: 'Postal',
-                                resolutionMethodName: 'USPS_VALIDATE',
-                                attributes: {
-                                    POBox: 'false',
-                                    POBoxOnlyZIP: 'false',
-                                    SplitZIP: 'false',
-                                    SuiteRequiredButMissing: 'false',
-                                    InvalidSuiteNumber: 'false',
-                                    ResolutionInput: 'RAW_ADDRESS',
-                                    DPV: 'true',
-                                    ResolutionMethod: 'USPS_VALIDATE',
-                                    DataVintage: 'May 2017',
-                                    MatchSource: 'Postal',
-                                    CountrySupported: 'true',
-                                    ValidlyFormed: 'true',
-                                    Matched: 'true',
-                                    Resolved: 'true',
-                                    Inserted: 'false',
-                                    MultiUnitBase: 'false',
-                                    ZIP11Match: 'true',
-                                    ZIP4Match: 'true',
-                                    UniqueZIP: 'false',
-                                    StreetAddress: 'true',
-                                    RRConversion: 'false',
-                                    ValidMultiUnit: 'false',
-                                    AddressType: 'STANDARDIZED',
-                                    AddressPrecision: 'STREET_ADDRESS',
-                                    MultipleMatches: 'false'
-                                }
-                            }
-                        ]
-                    }
-                }), {
-                    headers: { 'Content-Type': 'application/json' },
-                    status: 200
-                });
-            }
-
-            throw new Error(`Unexpected fetch URL: ${url}`);
-        });
-
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
-
-        const body = await fedex.validateAddress({
-            addressesToValidate: [{
-                address: {
-                    city: 'Chicago',
-                    countryCode: 'US',
-                    postalCode: '60639',
-                    stateOrProvinceCode: 'IL',
-                    streetLines: ['5132 W Altgeld St']
-                }
-            }]
-        });
-
-        const resolved = body.output.resolvedAddresses[0];
-
-        assert.strictEqual(resolved.classification, 'RESIDENTIAL');
-        assert.strictEqual(resolved.attributes.Resolved, 'true');
-    });
-
     t.test('should return BUSINESS for a business address', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
@@ -696,6 +603,183 @@ test('validateAddress (mocked)', async (t) => {
         assert.strictEqual(resolved.attributes.Resolved, 'true');
     });
 
+    t.test('should return RESIDENTIAL for a residential address', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/address/v1/addresses/resolve')) {
+                return new Response(JSON.stringify({
+                    transactionId: 'a538c6e8-9b78-45a4-a415-b2e53f19d930',
+                    output: {
+                        resolvedAddresses: [
+                            {
+                                streetLinesToken: [
+                                    '5132 W ALTGELD ST'
+                                ],
+                                city: 'CHICAGO',
+                                stateOrProvinceCode: 'IL',
+                                postalCode: '60639-2402',
+                                parsedPostalCode: {
+                                    base: '60639',
+                                    addOn: '2402',
+                                    deliveryPoint: '32'
+                                },
+                                countryCode: 'US',
+                                classification: 'RESIDENTIAL',
+                                ruralRouteHighwayContract: false,
+                                generalDelivery: false,
+                                customerMessages: [],
+                                normalizedStatusNameDPV: true,
+                                standardizedStatusNameMatchSource: 'Postal',
+                                resolutionMethodName: 'USPS_VALIDATE',
+                                attributes: {
+                                    POBox: 'false',
+                                    POBoxOnlyZIP: 'false',
+                                    SplitZIP: 'false',
+                                    SuiteRequiredButMissing: 'false',
+                                    InvalidSuiteNumber: 'false',
+                                    ResolutionInput: 'RAW_ADDRESS',
+                                    DPV: 'true',
+                                    ResolutionMethod: 'USPS_VALIDATE',
+                                    DataVintage: 'May 2017',
+                                    MatchSource: 'Postal',
+                                    CountrySupported: 'true',
+                                    ValidlyFormed: 'true',
+                                    Matched: 'true',
+                                    Resolved: 'true',
+                                    Inserted: 'false',
+                                    MultiUnitBase: 'false',
+                                    ZIP11Match: 'true',
+                                    ZIP4Match: 'true',
+                                    UniqueZIP: 'false',
+                                    StreetAddress: 'true',
+                                    RRConversion: 'false',
+                                    ValidMultiUnit: 'false',
+                                    AddressType: 'STANDARDIZED',
+                                    AddressPrecision: 'STREET_ADDRESS',
+                                    MultipleMatches: 'false'
+                                }
+                            }
+                        ]
+                    }
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        const body = await fedex.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'Chicago',
+                    countryCode: 'US',
+                    postalCode: '60639',
+                    stateOrProvinceCode: 'IL',
+                    streetLines: ['5132 W Altgeld St']
+                }
+            }]
+        });
+
+        const resolved = body.output.resolvedAddresses[0];
+
+        assert.strictEqual(resolved.classification, 'RESIDENTIAL');
+        assert.strictEqual(resolved.attributes.Resolved, 'true');
+    });
+
+    t.test('should return Resolved: false for a non-deliverable address', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/address/v1/addresses/resolve')) {
+                return new Response(JSON.stringify({
+                    transactionId: '577df10d-c0fa-4c34-b7a9-e3a4520204f9',
+                    output: {
+                        resolvedAddresses: [
+                            {
+                                streetLinesToken: [
+                                    '9999 IMAGINARY WAY'
+                                ],
+                                city: 'CHICAGO',
+                                stateOrProvinceCode: 'IL',
+                                postalCode: '60639',
+                                countryCode: 'US',
+                                classification: 'UNKNOWN',
+                                ruralRouteHighwayContract: false,
+                                generalDelivery: false,
+                                customerMessages: [
+                                    {
+                                        code: 'STANDARDIZED.ADDRESS.NOTFOUND',
+                                        message: 'Standardized address is not found.'
+                                    }
+                                ],
+                                attributes: {
+                                    SuiteRequiredButMissing: 'false',
+                                    PostalValidated: 'true',
+                                    InvalidSuiteNumber: 'false',
+                                    ZIP11Match: 'false',
+                                    GeneralDelivery: 'false',
+                                    DPV: 'false',
+                                    DataVintage: 'March 2026',
+                                    ZIP4Match: 'false',
+                                    CityStateValidated: 'true',
+                                    CountrySupported: 'true',
+                                    ValidlyFormed: 'true',
+                                    Matched: 'false',
+                                    StreetValidated: 'false',
+                                    MissingOrAmbiguousDirectional: 'false',
+                                    Resolved: 'false',
+                                    StreetRangeValidated: 'false',
+                                    AddressType: 'NORMALIZED',
+                                    Inserted: 'true',
+                                    MultipleMatches: 'false'
+                                }
+                            }
+                        ]
+                    }
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        const body = await fedex.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'Chicago',
+                    countryCode: 'US',
+                    postalCode: '60639',
+                    stateOrProvinceCode: 'IL',
+                    streetLines: ['9999 Imaginary Way']
+                }
+            }]
+        });
+
+        const resolved = body.output.resolvedAddresses[0];
+
+        assert.strictEqual(resolved.classification, 'UNKNOWN');
+        assert.strictEqual(resolved.attributes.Resolved, 'false');
+    });
+
     t.test('should return UNKNOWN for an unclassified address', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
@@ -789,8 +873,10 @@ test('validateAddress (mocked)', async (t) => {
         assert.strictEqual(resolved.attributes.Resolved, 'true');
     });
 
-    t.test('should return Resolved: false for a non-deliverable address', async (t) => {
-        t.mock.method(globalThis, 'fetch', async (url) => {
+    t.test('should send options.customer_transaction_id as x-customer-transaction-id header', async (t) => {
+        let sentHeader;
+
+        t.mock.method(globalThis, 'fetch', async (url, init) => {
             if (url.endsWith('/oauth/token')) {
                 return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
                     headers: { 'Content-Type': 'application/json' },
@@ -799,51 +885,10 @@ test('validateAddress (mocked)', async (t) => {
             }
 
             if (url.endsWith('/address/v1/addresses/resolve')) {
+                sentHeader = init.headers['x-customer-transaction-id'];
                 return new Response(JSON.stringify({
-                    transactionId: '577df10d-c0fa-4c34-b7a9-e3a4520204f9',
-                    output: {
-                        resolvedAddresses: [
-                            {
-                                streetLinesToken: [
-                                    '9999 IMAGINARY WAY'
-                                ],
-                                city: 'CHICAGO',
-                                stateOrProvinceCode: 'IL',
-                                postalCode: '60639',
-                                countryCode: 'US',
-                                classification: 'UNKNOWN',
-                                ruralRouteHighwayContract: false,
-                                generalDelivery: false,
-                                customerMessages: [
-                                    {
-                                        code: 'STANDARDIZED.ADDRESS.NOTFOUND',
-                                        message: 'Standardized address is not found.'
-                                    }
-                                ],
-                                attributes: {
-                                    SuiteRequiredButMissing: 'false',
-                                    PostalValidated: 'true',
-                                    InvalidSuiteNumber: 'false',
-                                    ZIP11Match: 'false',
-                                    GeneralDelivery: 'false',
-                                    DPV: 'false',
-                                    DataVintage: 'March 2026',
-                                    ZIP4Match: 'false',
-                                    CityStateValidated: 'true',
-                                    CountrySupported: 'true',
-                                    ValidlyFormed: 'true',
-                                    Matched: 'false',
-                                    StreetValidated: 'false',
-                                    MissingOrAmbiguousDirectional: 'false',
-                                    Resolved: 'false',
-                                    StreetRangeValidated: 'false',
-                                    AddressType: 'NORMALIZED',
-                                    Inserted: 'true',
-                                    MultipleMatches: 'false'
-                                }
-                            }
-                        ]
-                    }
+                    output: { resolvedAddresses: [{ classification: 'RESIDENTIAL' }] },
+                    transactionId: 'mock'
                 }), {
                     headers: { 'Content-Type': 'application/json' },
                     status: 200
@@ -855,43 +900,7 @@ test('validateAddress (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        const body = await fedex.validateAddress({
-            addressesToValidate: [{
-                address: {
-                    city: 'Chicago',
-                    countryCode: 'US',
-                    postalCode: '60639',
-                    stateOrProvinceCode: 'IL',
-                    streetLines: ['9999 Imaginary Way']
-                }
-            }]
-        });
-
-        const resolved = body.output.resolvedAddresses[0];
-
-        assert.strictEqual(resolved.classification, 'UNKNOWN');
-        assert.strictEqual(resolved.attributes.Resolved, 'false');
-    });
-
-    t.test('should throw HttpError for non 2xx response', async (t) => {
-        t.mock.method(globalThis, 'fetch', async (url) => {
-            if (url.endsWith('/oauth/token')) {
-                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
-                    headers: { 'Content-Type': 'application/json' },
-                    status: 200
-                });
-            }
-
-            if (url.endsWith('/address/v1/addresses/resolve')) {
-                return new Response('', { status: 500, statusText: 'Internal Server Error' });
-            }
-
-            throw new Error(`Unexpected fetch URL: ${url}`);
-        });
-
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
-
-        await assert.rejects(fedex.validateAddress({
+        await fedex.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'New York',
@@ -901,11 +910,9 @@ test('validateAddress (mocked)', async (t) => {
                     streetLines: ['350 5th Ave']
                 }
             }]
-        }), (err) => {
-            assert.strictEqual(err.name, 'HttpError');
-            assert.match(err.message, /^500/);
-            return true;
-        });
+        }, { customer_transaction_id: 'abc-123' });
+
+        assert.strictEqual(sentHeader, 'abc-123');
     });
 
     t.test('should throw HttpError for 200 response with errors envelope', async (t) => {
@@ -950,10 +957,8 @@ test('validateAddress (mocked)', async (t) => {
         });
     });
 
-    t.test('should send options.customer_transaction_id as x-customer-transaction-id header', async (t) => {
-        let sentHeader;
-
-        t.mock.method(globalThis, 'fetch', async (url, init) => {
+    t.test('should throw HttpError for non 2xx response', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
                 return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
                     headers: { 'Content-Type': 'application/json' },
@@ -962,14 +967,7 @@ test('validateAddress (mocked)', async (t) => {
             }
 
             if (url.endsWith('/address/v1/addresses/resolve')) {
-                sentHeader = init.headers['x-customer-transaction-id'];
-                return new Response(JSON.stringify({
-                    output: { resolvedAddresses: [{ classification: 'RESIDENTIAL' }] },
-                    transactionId: 'mock'
-                }), {
-                    headers: { 'Content-Type': 'application/json' },
-                    status: 200
-                });
+                return new Response('', { status: 500, statusText: 'Internal Server Error' });
             }
 
             throw new Error(`Unexpected fetch URL: ${url}`);
@@ -977,7 +975,7 @@ test('validateAddress (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.validateAddress({
+        await assert.rejects(fedex.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'New York',
@@ -987,8 +985,10 @@ test('validateAddress (mocked)', async (t) => {
                     streetLines: ['350 5th Ave']
                 }
             }]
-        }, { customer_transaction_id: 'abc-123' });
-
-        assert.strictEqual(sentHeader, 'abc-123');
+        }), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            assert.match(err.message, /^500/);
+            return true;
+        });
     });
 });
