@@ -221,7 +221,7 @@ test('rateAndTransitTimes (mocked)', async (t) => {
 
         await assert.rejects(fedex.rateAndTransitTimes(rateRequest()), (err) => {
             assert.strictEqual(err.name, 'HttpError');
-            assert.strictEqual(err.message, 'RATING.INVALID: Invalid account number; SERVICE.UNAVAILABLE: Service is currently unavailable');
+            assert.strictEqual(err.message, 'Invalid account number; Service is currently unavailable');
             assert.strictEqual(err.json.errors.length, 2);
             return true;
         });

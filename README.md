@@ -92,4 +92,4 @@ console.log(detail.totalNetCharge);
 // 24.17
 ```
 
-Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `"${code}: ${message}"` joined by `; ` and whose `.json` is the full response body.
+Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).

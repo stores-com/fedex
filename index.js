@@ -71,7 +71,7 @@ function FedEx(args) {
 
         if (json.errors?.length) {
             const err = new HttpError(res);
-            err.message = json.errors.map((e) => `${e.code}: ${e.message}`).join('; ');
+            err.message = json.errors.map(e => e.message).join('; ');
             err.json = json;
             throw err;
         }
