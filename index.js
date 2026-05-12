@@ -39,7 +39,7 @@ function FedEx(args) {
 
         const json = await res.json();
 
-        cache.put(key, json, (Number(json.expires_in) - 100) * 1000);
+        cache.put(key, json, Number(json.expires_in) * 1000 / 2);
 
         return json;
     };
@@ -78,7 +78,10 @@ function FedEx(args) {
         const body = await res.json();
 
         if (body.errors?.length) {
-            throw new Error(`${body.errors[0].code}: ${body.errors[0].message}`);
+            const err = new HttpError(res);
+            err.message = `${body.errors[0].code}: ${body.errors[0].message}`;
+            err.json = body;
+            throw err;
         }
 
         return body;
