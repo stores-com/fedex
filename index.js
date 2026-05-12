@@ -67,11 +67,12 @@ function FedEx(args) {
             throw await HttpError.from(res);
         }
 
-        const json = await res.clone().json();
+        const json = await res.json();
 
         if (json.errors?.length) {
-            const err = await HttpError.from(res);
+            const err = new HttpError(res);
             err.message = json.errors.map(e => e.message).join('; ');
+            err.json = json;
             throw err;
         }
 
