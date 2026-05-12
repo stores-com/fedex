@@ -63,7 +63,7 @@ test('rateAndTransitTimes', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(() => fedex.rateAndTransitTimes({
+        const body = await async.retry(async () => fedex.rateAndTransitTimes({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             requestedShipment: {
                 packagingType: 'YOUR_PACKAGING',
@@ -120,7 +120,7 @@ test('rateAndTransitTimes', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(() => fedex.rateAndTransitTimes({
+        const body = await async.retry(async () => fedex.rateAndTransitTimes({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             requestedShipment: {
                 packagingType: 'YOUR_PACKAGING',
@@ -399,7 +399,7 @@ test('validateAddress', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(() => fedex.validateAddress({
+        const body = await async.retry(async () => fedex.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'Chicago',
