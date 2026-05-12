@@ -1,87 +1,9 @@
 const assert = require('node:assert');
 const test = require('node:test');
-const sleep = require('node:timers/promises').setTimeout;
+
+const async = require('async');
 
 const FedEx = require('../index');
-
-const MOCK_URL = 'https://mocks.fedex.com';
-
-// Short retry for riding out transient blips
-async function retry(fn, attempts = 5) {
-    for (let i = 1; i <= attempts; i++) {
-        try {
-            return await fn();
-        } catch (err) {
-            if (i === attempts) {
-                throw err;
-            }
-
-            await sleep(1000);
-        }
-    }
-}
-
-function mockOAuthResponse() {
-    return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
-        headers: { 'Content-Type': 'application/json' },
-        status: 200
-    });
-}
-
-function shipment(opts) {
-    opts = opts || {};
-
-    const body = {
-        packagingType: 'YOUR_PACKAGING',
-        pickupType: 'USE_SCHEDULED_PICKUP',
-        preferredCurrency: 'USD',
-        rateRequestType: ['ACCOUNT'],
-        recipient: {
-            address: {
-                city: 'New York',
-                countryCode: 'US',
-                postalCode: '10118',
-                residential: false,
-                stateOrProvinceCode: 'NY',
-                streetLines: ['350 5th Ave']
-            },
-            contact: {
-                personName: 'Test Recipient',
-                phoneNumber: '0000000000'
-            }
-        },
-        requestedPackageLineItems: [{
-            groupPackageCount: 1,
-            weight: { units: 'LB', value: opts.smartPost ? 0.5 : 5 }
-        }],
-        serviceType: opts.serviceType || 'FEDEX_GROUND',
-        shipDateStamp: new Date().toISOString().slice(0, 10),
-        shipper: {
-            address: {
-                city: 'Lindon',
-                countryCode: 'US',
-                postalCode: '84042',
-                stateOrProvinceCode: 'UT',
-                streetLines: ['275 W 200 N']
-            },
-            contact: {
-                companyName: 'Test Shipper',
-                phoneNumber: '0000000000'
-            }
-        },
-        totalPackageCount: 1
-    };
-
-    if (opts.smartPost) {
-        body.smartPostInfoDetail = {
-            ancillaryEndorsement: 'ADDRESS_CORRECTION',
-            hubId: process.env.FEDEX_SMART_POST_HUB_ID,
-            indicia: 'PRESORTED_STANDARD'
-        };
-    }
-
-    return body;
-}
 
 test('getAccessToken', { concurrency: true }, async (t) => {
     t.test('should return an error for invalid url', async () => {
@@ -133,13 +55,6 @@ test('getAccessToken', { concurrency: true }, async (t) => {
     });
 });
 
-function rateRequest(opts) {
-    return {
-        accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
-        requestedShipment: shipment(opts)
-    };
-}
-
 test('rateAndTransitTimes', { concurrency: true }, async (t) => {
     t.test('should return rate quotes for a Ground shipment', async () => {
         const fedex = new FedEx({
@@ -148,7 +63,49 @@ test('rateAndTransitTimes', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await retry(() => fedex.rateAndTransitTimes(rateRequest()));
+        const body = await async.retry(() => fedex.rateAndTransitTimes({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            requestedShipment: {
+                packagingType: 'YOUR_PACKAGING',
+                pickupType: 'USE_SCHEDULED_PICKUP',
+                preferredCurrency: 'USD',
+                rateRequestType: ['ACCOUNT'],
+                recipient: {
+                    address: {
+                        city: 'New York',
+                        countryCode: 'US',
+                        postalCode: '10118',
+                        residential: false,
+                        stateOrProvinceCode: 'NY',
+                        streetLines: ['350 5th Ave']
+                    },
+                    contact: {
+                        personName: 'Test Recipient',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                requestedPackageLineItems: [{
+                    groupPackageCount: 1,
+                    weight: { units: 'LB', value: 5 }
+                }],
+                serviceType: 'FEDEX_GROUND',
+                shipDateStamp: new Date().toISOString().slice(0, 10),
+                shipper: {
+                    address: {
+                        city: 'Lindon',
+                        countryCode: 'US',
+                        postalCode: '84042',
+                        stateOrProvinceCode: 'UT',
+                        streetLines: ['275 W 200 N']
+                    },
+                    contact: {
+                        companyName: 'Test Shipper',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                totalPackageCount: 1
+            }
+        }));
 
         assert(body);
         assert(body.transactionId);
@@ -163,7 +120,54 @@ test('rateAndTransitTimes', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await retry(() => fedex.rateAndTransitTimes(rateRequest({ serviceType: 'SMART_POST', smartPost: true })));
+        const body = await async.retry(() => fedex.rateAndTransitTimes({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            requestedShipment: {
+                packagingType: 'YOUR_PACKAGING',
+                pickupType: 'USE_SCHEDULED_PICKUP',
+                preferredCurrency: 'USD',
+                rateRequestType: ['ACCOUNT'],
+                recipient: {
+                    address: {
+                        city: 'New York',
+                        countryCode: 'US',
+                        postalCode: '10118',
+                        residential: false,
+                        stateOrProvinceCode: 'NY',
+                        streetLines: ['350 5th Ave']
+                    },
+                    contact: {
+                        personName: 'Test Recipient',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                requestedPackageLineItems: [{
+                    groupPackageCount: 1,
+                    weight: { units: 'LB', value: 0.5 }
+                }],
+                serviceType: 'SMART_POST',
+                shipDateStamp: new Date().toISOString().slice(0, 10),
+                shipper: {
+                    address: {
+                        city: 'Lindon',
+                        countryCode: 'US',
+                        postalCode: '84042',
+                        stateOrProvinceCode: 'UT',
+                        streetLines: ['275 W 200 N']
+                    },
+                    contact: {
+                        companyName: 'Test Shipper',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                smartPostInfoDetail: {
+                    ancillaryEndorsement: 'ADDRESS_CORRECTION',
+                    hubId: process.env.FEDEX_SMART_POST_HUB_ID,
+                    indicia: 'PRESORTED_STANDARD'
+                },
+                totalPackageCount: 1
+            }
+        }));
 
         assert(body);
         assert(body.transactionId);
@@ -176,7 +180,10 @@ test('rateAndTransitTimes (mocked)', async (t) => {
     t.test('should throw HttpError for non 2xx response', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
-                return mockOAuthResponse();
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             if (url.endsWith('/rate/v1/rates/quotes')) {
@@ -186,9 +193,51 @@ test('rateAndTransitTimes (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.rateAndTransitTimes(rateRequest()), (err) => {
+        await assert.rejects(fedex.rateAndTransitTimes({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            requestedShipment: {
+                packagingType: 'YOUR_PACKAGING',
+                pickupType: 'USE_SCHEDULED_PICKUP',
+                preferredCurrency: 'USD',
+                rateRequestType: ['ACCOUNT'],
+                recipient: {
+                    address: {
+                        city: 'New York',
+                        countryCode: 'US',
+                        postalCode: '10118',
+                        residential: false,
+                        stateOrProvinceCode: 'NY',
+                        streetLines: ['350 5th Ave']
+                    },
+                    contact: {
+                        personName: 'Test Recipient',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                requestedPackageLineItems: [{
+                    groupPackageCount: 1,
+                    weight: { units: 'LB', value: 5 }
+                }],
+                serviceType: 'FEDEX_GROUND',
+                shipDateStamp: new Date().toISOString().slice(0, 10),
+                shipper: {
+                    address: {
+                        city: 'Lindon',
+                        countryCode: 'US',
+                        postalCode: '84042',
+                        stateOrProvinceCode: 'UT',
+                        streetLines: ['275 W 200 N']
+                    },
+                    contact: {
+                        companyName: 'Test Shipper',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                totalPackageCount: 1
+            }
+        }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
             assert.match(err.message, /^500/);
             return true;
@@ -198,7 +247,10 @@ test('rateAndTransitTimes (mocked)', async (t) => {
     t.test('should throw HttpError for 200 response with errors envelope', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
-                return mockOAuthResponse();
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             if (url.endsWith('/rate/v1/rates/quotes')) {
@@ -217,9 +269,51 @@ test('rateAndTransitTimes (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.rateAndTransitTimes(rateRequest()), (err) => {
+        await assert.rejects(fedex.rateAndTransitTimes({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            requestedShipment: {
+                packagingType: 'YOUR_PACKAGING',
+                pickupType: 'USE_SCHEDULED_PICKUP',
+                preferredCurrency: 'USD',
+                rateRequestType: ['ACCOUNT'],
+                recipient: {
+                    address: {
+                        city: 'New York',
+                        countryCode: 'US',
+                        postalCode: '10118',
+                        residential: false,
+                        stateOrProvinceCode: 'NY',
+                        streetLines: ['350 5th Ave']
+                    },
+                    contact: {
+                        personName: 'Test Recipient',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                requestedPackageLineItems: [{
+                    groupPackageCount: 1,
+                    weight: { units: 'LB', value: 5 }
+                }],
+                serviceType: 'FEDEX_GROUND',
+                shipDateStamp: new Date().toISOString().slice(0, 10),
+                shipper: {
+                    address: {
+                        city: 'Lindon',
+                        countryCode: 'US',
+                        postalCode: '84042',
+                        stateOrProvinceCode: 'UT',
+                        streetLines: ['275 W 200 N']
+                    },
+                    contact: {
+                        companyName: 'Test Shipper',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                totalPackageCount: 1
+            }
+        }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
             return true;
         });
@@ -230,7 +324,10 @@ test('rateAndTransitTimes (mocked)', async (t) => {
 
         t.mock.method(globalThis, 'fetch', async (url, init) => {
             if (url.endsWith('/oauth/token')) {
-                return mockOAuthResponse();
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             if (url.endsWith('/rate/v1/rates/quotes')) {
@@ -244,9 +341,51 @@ test('rateAndTransitTimes (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.rateAndTransitTimes(rateRequest(), { customer_transaction_id: 'abc-123' });
+        await fedex.rateAndTransitTimes({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            requestedShipment: {
+                packagingType: 'YOUR_PACKAGING',
+                pickupType: 'USE_SCHEDULED_PICKUP',
+                preferredCurrency: 'USD',
+                rateRequestType: ['ACCOUNT'],
+                recipient: {
+                    address: {
+                        city: 'New York',
+                        countryCode: 'US',
+                        postalCode: '10118',
+                        residential: false,
+                        stateOrProvinceCode: 'NY',
+                        streetLines: ['350 5th Ave']
+                    },
+                    contact: {
+                        personName: 'Test Recipient',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                requestedPackageLineItems: [{
+                    groupPackageCount: 1,
+                    weight: { units: 'LB', value: 5 }
+                }],
+                serviceType: 'FEDEX_GROUND',
+                shipDateStamp: new Date().toISOString().slice(0, 10),
+                shipper: {
+                    address: {
+                        city: 'Lindon',
+                        countryCode: 'US',
+                        postalCode: '84042',
+                        stateOrProvinceCode: 'UT',
+                        streetLines: ['275 W 200 N']
+                    },
+                    contact: {
+                        companyName: 'Test Shipper',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                totalPackageCount: 1
+            }
+        }, { customer_transaction_id: 'abc-123' });
 
         assert.strictEqual(sentHeader, 'abc-123');
     });
@@ -260,7 +399,7 @@ test('validateAddress', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await retry(() => fedex.validateAddress({
+        const body = await async.retry(() => fedex.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'Chicago',
@@ -281,7 +420,10 @@ test('validateAddress (mocked)', async (t) => {
     t.test('should return RESIDENTIAL for a residential address', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
-                return mockOAuthResponse();
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             if (url.endsWith('/address/v1/addresses/resolve')) {
@@ -348,7 +490,7 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
         const body = await fedex.validateAddress({
             addressesToValidate: [{
@@ -371,7 +513,10 @@ test('validateAddress (mocked)', async (t) => {
     t.test('should return BUSINESS for a business address', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
-                return mockOAuthResponse();
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             if (url.endsWith('/address/v1/addresses/resolve')) {
@@ -438,7 +583,7 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
         const body = await fedex.validateAddress({
             addressesToValidate: [{
@@ -461,7 +606,10 @@ test('validateAddress (mocked)', async (t) => {
     t.test('should return MIXED for a mixed-use address', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
-                return mockOAuthResponse();
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             if (url.endsWith('/address/v1/addresses/resolve')) {
@@ -528,7 +676,7 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
         const body = await fedex.validateAddress({
             addressesToValidate: [{
@@ -551,7 +699,10 @@ test('validateAddress (mocked)', async (t) => {
     t.test('should return UNKNOWN for an unclassified address', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
-                return mockOAuthResponse();
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             if (url.endsWith('/address/v1/addresses/resolve')) {
@@ -618,7 +769,7 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
         const body = await fedex.validateAddress({
             addressesToValidate: [{
@@ -641,7 +792,10 @@ test('validateAddress (mocked)', async (t) => {
     t.test('should return Resolved: false for a non-deliverable address', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
-                return mockOAuthResponse();
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             if (url.endsWith('/address/v1/addresses/resolve')) {
@@ -699,7 +853,7 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
         const body = await fedex.validateAddress({
             addressesToValidate: [{
@@ -722,7 +876,10 @@ test('validateAddress (mocked)', async (t) => {
     t.test('should throw HttpError for non 2xx response', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
-                return mockOAuthResponse();
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             if (url.endsWith('/address/v1/addresses/resolve')) {
@@ -732,7 +889,7 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
         await assert.rejects(fedex.validateAddress({
             addressesToValidate: [{
@@ -754,7 +911,10 @@ test('validateAddress (mocked)', async (t) => {
     t.test('should throw HttpError for 200 response with errors envelope', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
-                return mockOAuthResponse();
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             if (url.endsWith('/address/v1/addresses/resolve')) {
@@ -772,7 +932,7 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
         await assert.rejects(fedex.validateAddress({
             addressesToValidate: [{
@@ -795,7 +955,10 @@ test('validateAddress (mocked)', async (t) => {
 
         t.mock.method(globalThis, 'fetch', async (url, init) => {
             if (url.endsWith('/oauth/token')) {
-                return mockOAuthResponse();
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
             }
 
             if (url.endsWith('/address/v1/addresses/resolve')) {
@@ -812,7 +975,7 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
         await fedex.validateAddress({
             addressesToValidate: [{

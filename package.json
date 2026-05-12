@@ -6,6 +6,7 @@
     "description": "FedEx REST API client for OAuth tokens, rate quotes, and address validation.",
     "devDependencies": {
         "@eslint/js": "*",
+        "async": "~3.2.0",
         "globals": "*"
     },
     "keywords": [
