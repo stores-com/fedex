@@ -252,20 +252,6 @@ test('rateAndTransitTimes (mocked)', async (t) => {
     });
 });
 
-function addressValidationRequest() {
-    return {
-        addressesToValidate: [{
-            address: {
-                city: 'New York',
-                countryCode: 'US',
-                postalCode: '10118',
-                stateOrProvinceCode: 'NY',
-                streetLines: ['350 5th Ave']
-            }
-        }]
-    };
-}
-
 test('validateAddress', { concurrency: true }, async (t) => {
     t.test('should return resolved addresses', async () => {
         const fedex = new FedEx({
@@ -274,7 +260,17 @@ test('validateAddress', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await retry(() => fedex.validateAddress(addressValidationRequest()));
+        const body = await retry(() => fedex.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'New York',
+                    countryCode: 'US',
+                    postalCode: '10118',
+                    stateOrProvinceCode: 'NY',
+                    streetLines: ['350 5th Ave']
+                }
+            }]
+        }));
 
         assert(body);
         assert(body.transactionId);
@@ -299,7 +295,17 @@ test('validateAddress (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
 
-        await assert.rejects(fedex.validateAddress(addressValidationRequest()), (err) => {
+        await assert.rejects(fedex.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'New York',
+                    countryCode: 'US',
+                    postalCode: '10118',
+                    stateOrProvinceCode: 'NY',
+                    streetLines: ['350 5th Ave']
+                }
+            }]
+        }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
             assert.match(err.message, /^500/);
             return true;
@@ -329,7 +335,17 @@ test('validateAddress (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
 
-        await assert.rejects(fedex.validateAddress(addressValidationRequest()), (err) => {
+        await assert.rejects(fedex.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'New York',
+                    countryCode: 'US',
+                    postalCode: '10118',
+                    stateOrProvinceCode: 'NY',
+                    streetLines: ['350 5th Ave']
+                }
+            }]
+        }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
             return true;
         });
@@ -359,7 +375,17 @@ test('validateAddress (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
 
-        await fedex.validateAddress(addressValidationRequest(), { customer_transaction_id: 'abc-123' });
+        await fedex.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'New York',
+                    countryCode: 'US',
+                    postalCode: '10118',
+                    stateOrProvinceCode: 'NY',
+                    streetLines: ['350 5th Ave']
+                }
+            }]
+        }, { customer_transaction_id: 'abc-123' });
 
         assert.strictEqual(sentHeader, 'abc-123');
     });
