@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@stores.com/fedex)](https://www.npmjs.com/package/@stores.com/fedex)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-FedEx REST API client for OAuth tokens and Rates and Transit Times.
+FedEx REST API client for OAuth tokens, Rates and Transit Times, and Address Validation.
 
 ## Installation
 
@@ -90,6 +90,33 @@ const detail = json.output.rateReplyDetails[0].ratedShipmentDetails[0];
 
 console.log(detail.totalNetCharge);
 // 24.17
+```
+
+Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).
+
+### validateAddress(addressValidationRequest, options)
+
+Validate and resolve addresses using the FedEx Address Validation API. The caller supplies the full request body — `addressesToValidate` and optionally `inEffectAsOfTimestamp` — and the package forwards it verbatim.
+
+See: https://developer.fedex.com/api/en-us/catalog/address-validation/v1/docs.html
+
+```javascript
+const json = await fedex.validateAddress({
+    addressesToValidate: [{
+        address: {
+            city: 'New York',
+            countryCode: 'US',
+            postalCode: '10118',
+            stateOrProvinceCode: 'NY',
+            streetLines: ['350 5th Ave']
+        }
+    }]
+});
+
+const resolved = json.output.resolvedAddresses[0];
+
+console.log(resolved.classification);
+// 'RESIDENTIAL'
 ```
 
 Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).

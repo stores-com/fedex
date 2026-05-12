@@ -133,6 +133,20 @@ test('getAccessToken', { concurrency: true }, async (t) => {
     });
 });
 
+function addressValidationRequest() {
+    return {
+        addressesToValidate: [{
+            address: {
+                city: 'New York',
+                countryCode: 'US',
+                postalCode: '10118',
+                stateOrProvinceCode: 'NY',
+                streetLines: ['350 5th Ave']
+            }
+        }]
+    };
+}
+
 function rateRequest(opts) {
     return {
         accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
@@ -247,6 +261,105 @@ test('rateAndTransitTimes (mocked)', async (t) => {
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
 
         await fedex.rateAndTransitTimes(rateRequest(), { customer_transaction_id: 'abc-123' });
+
+        assert.strictEqual(sentHeader, 'abc-123');
+    });
+});
+
+test('validateAddress', { concurrency: true }, async (t) => {
+    t.test('should return resolved addresses', async () => {
+        const fedex = new FedEx({
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const body = await retry(() => fedex.validateAddress(addressValidationRequest()));
+
+        assert(body);
+        assert(body.transactionId);
+        assert(body.output);
+        assert(Array.isArray(body.output.resolvedAddresses));
+    });
+});
+
+test('validateAddress (mocked)', async (t) => {
+    t.test('should throw HttpError for non 2xx response', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return mockOAuthResponse();
+            }
+
+            if (url.endsWith('/address/v1/addresses/resolve')) {
+                return new Response('', { status: 500, statusText: 'Internal Server Error' });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+
+        await assert.rejects(fedex.validateAddress(addressValidationRequest()), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            assert.match(err.message, /^500/);
+            return true;
+        });
+    });
+
+    t.test('should throw HttpError for 200 response with errors envelope', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return mockOAuthResponse();
+            }
+
+            if (url.endsWith('/address/v1/addresses/resolve')) {
+                return new Response(JSON.stringify({
+                    errors: [
+                        { code: 'ADDRESS.VALIDATION.FAILURE', message: 'Invalid address' }
+                    ],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+
+        await assert.rejects(fedex.validateAddress(addressValidationRequest()), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            return true;
+        });
+    });
+
+    t.test('should send options.customer_transaction_id as x-customer-transaction-id header', async (t) => {
+        let sentHeader;
+
+        t.mock.method(globalThis, 'fetch', async (url, init) => {
+            if (url.endsWith('/oauth/token')) {
+                return mockOAuthResponse();
+            }
+
+            if (url.endsWith('/address/v1/addresses/resolve')) {
+                sentHeader = init.headers['x-customer-transaction-id'];
+                return new Response(JSON.stringify({
+                    output: { resolvedAddresses: [{ classification: 'RESIDENTIAL' }] },
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+
+        await fedex.validateAddress(addressValidationRequest(), { customer_transaction_id: 'abc-123' });
 
         assert.strictEqual(sentHeader, 'abc-123');
     });
