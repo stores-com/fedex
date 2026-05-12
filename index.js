@@ -18,7 +18,7 @@ function FedEx(args) {
      * @see https://developer.fedex.com/api/en-us/catalog/authorization.html
      */
     this.getAccessToken = async (options = {}) => {
-        const key = `fedex_${_options.api_key}`;
+        const key = `fedex:${_options.api_key}`;
         const accessToken = cache.get(key);
 
         if (accessToken) {
@@ -56,6 +56,8 @@ function FedEx(args) {
      *
      * @param {object} rateRequest - Full Rates and Transit Times request body.
      * @param {object} [options]
+     * @param {string} [options.customer_transaction_id] - Sent as the `x-customer-transaction-id`
+     *   request header. FedEx echoes this back so callers can correlate requests with responses.
      * @param {number} [options.timeout=30000] - Request timeout in milliseconds.
      * @returns {Promise<object>} The parsed response body, including `output.rateReplyDetails[]`.
      * @see https://developer.fedex.com/api/en-us/catalog/rate/v1/docs.html
@@ -63,12 +65,18 @@ function FedEx(args) {
     this.rateAndTransitTimes = async (rateRequest, options = {}) => {
         const accessToken = await this.getAccessToken();
 
+        const headers = {
+            Authorization: `Bearer ${accessToken.access_token}`,
+            'Content-Type': 'application/json'
+        };
+
+        if (options.customer_transaction_id) {
+            headers['x-customer-transaction-id'] = options.customer_transaction_id;
+        }
+
         const response = await fetch(`${_options.url}/rate/v1/rates/quotes`, {
             body: JSON.stringify(rateRequest),
-            headers: {
-                Authorization: `Bearer ${accessToken.access_token}`,
-                'Content-Type': 'application/json'
-            },
+            headers,
             method: 'POST',
             signal: AbortSignal.timeout(options.timeout || 30000)
         });

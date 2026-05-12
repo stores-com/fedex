@@ -224,4 +224,30 @@ test('rateAndTransitTimes (mocked)', async (t) => {
             return true;
         });
     });
+
+    t.test('should send options.customer_transaction_id as x-customer-transaction-id header', async (t) => {
+        let sentHeader;
+
+        t.mock.method(globalThis, 'fetch', async (url, init) => {
+            if (url.endsWith('/oauth/token')) {
+                return mockOAuthResponse();
+            }
+
+            if (url.endsWith('/rate/v1/rates/quotes')) {
+                sentHeader = init.headers['x-customer-transaction-id'];
+                return new Response(JSON.stringify({ output: { rateReplyDetails: [] }, transactionId: 'mock' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
+
+        await fedex.rateAndTransitTimes(rateRequest(), { customer_transaction_id: 'abc-123' });
+
+        assert.strictEqual(sentHeader, 'abc-123');
+    });
 });
