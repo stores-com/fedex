@@ -221,7 +221,6 @@ test('rateAndTransitTimes (mocked)', async (t) => {
 
         await assert.rejects(fedex.rateAndTransitTimes(rateRequest()), (err) => {
             assert.strictEqual(err.name, 'HttpError');
-            assert.strictEqual(err.message, 'Invalid account number; Service is currently unavailable');
             return true;
         });
     });

@@ -1,6 +1,6 @@
 {
     "dependencies": {
-        "@stores.com/http-error": "~1.0.0",
+        "@stores.com/http-error": "~1.1.0",
         "memory-cache": "~0.2.0"
     },
     "description": "FedEx REST API client for OAuth tokens and rate quotes.",
