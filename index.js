@@ -8,7 +8,13 @@ function FedEx(args) {
     };
 
     /**
-     * FedEx APIs use the OAuth 2.0 protocol for authentication and authorization using the client_credentials grant type.
+     * Request an OAuth access token from FedEx using the `client_credentials` grant. Tokens
+     * are cached in memory per API key for half their lifetime, so repeat calls return the
+     * same token until it's close to expiring.
+     *
+     * @param {object} [options]
+     * @param {number} [options.timeout=30000] - Request timeout in milliseconds.
+     * @returns {Promise<{ access_token: string, expires_in: number, scope: string, token_type: string }>}
      * @see https://developer.fedex.com/api/en-us/catalog/authorization.html
      */
     this.getAccessToken = async (options = {}) => {
@@ -44,10 +50,14 @@ function FedEx(args) {
     };
 
     /**
-     * Rates and Transit Times: request rate quotes and transit times from FedEx.
-     * The caller supplies the full request body (accountNumber, requestedShipment, and any of
-     * rateRequestControlParameters, carrierCodes, processingOptions, version, etc.);
-     * the package forwards it verbatim.
+     * Call the FedEx Rates and Transit Times API. The caller supplies the full request body
+     * — `accountNumber`, `requestedShipment`, and any of `rateRequestControlParameters`,
+     * `carrierCodes`, `processingOptions`, `version` — and the package forwards it verbatim.
+     *
+     * @param {object} rateRequest - Full Rates and Transit Times request body.
+     * @param {object} [options]
+     * @param {number} [options.timeout=30000] - Request timeout in milliseconds.
+     * @returns {Promise<object>} The parsed response body, including `output.rateReplyDetails[]`.
      * @see https://developer.fedex.com/api/en-us/catalog/rate/v1/docs.html
      */
     this.rateAndTransitTimes = async (rateRequest, options = {}) => {
