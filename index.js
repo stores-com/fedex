@@ -25,7 +25,7 @@ function FedEx(args) {
             return accessToken;
         }
 
-        const res = await fetch(`${_options.url}/oauth/token`, {
+        const response = await fetch(`${_options.url}/oauth/token`, {
             body: new URLSearchParams({
                 client_id: _options.api_key,
                 client_secret: _options.secret_key,
@@ -38,11 +38,11 @@ function FedEx(args) {
             signal: AbortSignal.timeout(options.timeout || 30000)
         });
 
-        if (!res.ok) {
-            throw await HttpError.from(res);
+        if (!response.ok) {
+            throw await HttpError.from(response);
         }
 
-        const json = await res.json();
+        const json = await response.json();
 
         cache.put(key, json, Number(json.expires_in) * 1000 / 2);
 
@@ -63,7 +63,7 @@ function FedEx(args) {
     this.rateAndTransitTimes = async (rateRequest, options = {}) => {
         const accessToken = await this.getAccessToken();
 
-        const res = await fetch(`${_options.url}/rate/v1/rates/quotes`, {
+        const response = await fetch(`${_options.url}/rate/v1/rates/quotes`, {
             body: JSON.stringify(rateRequest),
             headers: {
                 Authorization: `Bearer ${accessToken.access_token}`,
@@ -73,14 +73,14 @@ function FedEx(args) {
             signal: AbortSignal.timeout(options.timeout || 30000)
         });
 
-        if (!res.ok) {
-            throw await HttpError.from(res);
+        if (!response.ok) {
+            throw await HttpError.from(response);
         }
 
-        const json = await res.json();
+        const json = await response.json();
 
         if (json.errors?.length) {
-            throw await HttpError.from(res);
+            throw await HttpError.from(response);
         }
 
         return json;
