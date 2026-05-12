@@ -205,7 +205,7 @@ test('rates (mocked)', async (t) => {
         });
     });
 
-    t.test('should throw Error for 200 response with errors envelope', async (t) => {
+    t.test('should throw HttpError for 200 response with errors envelope', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
                 return mockOAuthResponse();
@@ -226,6 +226,11 @@ test('rates (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
 
-        await assert.rejects(fedex.rates(shipment()), { message: 'RATING.INVALID: Invalid account number' });
+        await assert.rejects(fedex.rates(shipment()), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            assert.strictEqual(err.message, 'RATING.INVALID: Invalid account number');
+            assert.deepStrictEqual(err.json.errors[0], { code: 'RATING.INVALID', message: 'Invalid account number' });
+            return true;
+        });
     });
 });
