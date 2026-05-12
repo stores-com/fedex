@@ -106,7 +106,6 @@ test('getAccessToken', { concurrency: true }, async (t) => {
 
     t.test('should return a valid access token', async () => {
         const fedex = new FedEx({
-            account_number: process.env.FEDEX_ACCOUNT_NUMBER,
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
@@ -122,7 +121,6 @@ test('getAccessToken', { concurrency: true }, async (t) => {
 
     t.test('should return the same access token on subsequent calls', async () => {
         const fedex = new FedEx({
-            account_number: process.env.FEDEX_ACCOUNT_NUMBER,
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
@@ -135,16 +133,22 @@ test('getAccessToken', { concurrency: true }, async (t) => {
     });
 });
 
-test('rates', { concurrency: true }, async (t) => {
+function rateRequest(opts) {
+    return {
+        accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+        requestedShipment: shipment(opts)
+    };
+}
+
+test('rateAndTransitTimes', { concurrency: true }, async (t) => {
     t.test('should return rate quotes for a Ground shipment', async () => {
         const fedex = new FedEx({
-            account_number: process.env.FEDEX_ACCOUNT_NUMBER,
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
         });
 
-        const body = await retry(() => fedex.rates(shipment()));
+        const body = await retry(() => fedex.rateAndTransitTimes(rateRequest()));
 
         assert(body);
         assert(body.transactionId);
@@ -154,28 +158,12 @@ test('rates', { concurrency: true }, async (t) => {
 
     t.test('should return rate quotes for a SmartPost shipment', async () => {
         const fedex = new FedEx({
-            account_number: process.env.FEDEX_ACCOUNT_NUMBER,
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
         });
 
-        const body = await retry(() => fedex.rates(shipment({ serviceType: 'SMART_POST', smartPost: true })));
-
-        assert(body);
-        assert(body.transactionId);
-        assert(body.output);
-        assert(Array.isArray(body.output.rateReplyDetails));
-    });
-
-    t.test('should accept an account_number override', async () => {
-        const fedex = new FedEx({
-            api_key: process.env.FEDEX_API_KEY,
-            secret_key: process.env.FEDEX_SECRET_KEY,
-            url: process.env.FEDEX_URL
-        });
-
-        const body = await retry(() => fedex.rates(shipment(), { account_number: process.env.FEDEX_ACCOUNT_NUMBER }));
+        const body = await retry(() => fedex.rateAndTransitTimes(rateRequest({ serviceType: 'SMART_POST', smartPost: true })));
 
         assert(body);
         assert(body.transactionId);
@@ -184,7 +172,7 @@ test('rates', { concurrency: true }, async (t) => {
     });
 });
 
-test('rates (mocked)', async (t) => {
+test('rateAndTransitTimes (mocked)', async (t) => {
     t.test('should throw HttpError for non 2xx response', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
@@ -200,7 +188,7 @@ test('rates (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
 
-        await assert.rejects(fedex.rates(shipment()), (err) => {
+        await assert.rejects(fedex.rateAndTransitTimes(rateRequest()), (err) => {
             assert.strictEqual(err.name, 'HttpError');
             assert.match(err.message, /^500/);
             return true;
@@ -215,7 +203,10 @@ test('rates (mocked)', async (t) => {
 
             if (url.endsWith('/rate/v1/rates/quotes')) {
                 return new Response(JSON.stringify({
-                    errors: [{ code: 'RATING.INVALID', message: 'Invalid account number' }],
+                    errors: [
+                        { code: 'RATING.INVALID', message: 'Invalid account number' },
+                        { code: 'SERVICE.UNAVAILABLE', message: 'Service is currently unavailable' }
+                    ],
                     transactionId: 'mock'
                 }), {
                     headers: { 'Content-Type': 'application/json' },
@@ -228,10 +219,10 @@ test('rates (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock', url: MOCK_URL });
 
-        await assert.rejects(fedex.rates(shipment()), (err) => {
+        await assert.rejects(fedex.rateAndTransitTimes(rateRequest()), (err) => {
             assert.strictEqual(err.name, 'HttpError');
-            assert.strictEqual(err.message, 'RATING.INVALID: Invalid account number');
-            assert.deepStrictEqual(err.json.errors[0], { code: 'RATING.INVALID', message: 'Invalid account number' });
+            assert.strictEqual(err.message, 'RATING.INVALID: Invalid account number; SERVICE.UNAVAILABLE: Service is currently unavailable');
+            assert.strictEqual(err.json.errors.length, 2);
             return true;
         });
     });

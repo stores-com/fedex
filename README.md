@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@stores.com/fedex)](https://www.npmjs.com/package/@stores.com/fedex)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-FedEx REST API client for OAuth tokens and rate quotes.
+FedEx REST API client for OAuth tokens and Rates and Transit Times.
 
 ## Installation
 
@@ -19,7 +19,6 @@ $ npm install @stores.com/fedex
 const FedEx = require('@stores.com/fedex');
 
 const fedex = new FedEx({
-    account_number: 'your_account_number',
     api_key: 'your_api_key',
     secret_key: 'your_secret_key'
 });
@@ -29,7 +28,6 @@ By default the client targets the production endpoint (`https://apis.fedex.com`)
 
 ```javascript
 const fedex = new FedEx({
-    account_number: 'your_account_number',
     api_key: 'your_api_key',
     secret_key: 'your_secret_key',
     url: 'https://apis-sandbox.fedex.com'
@@ -44,7 +42,7 @@ const fedex = new FedEx({
 
 ### getAccessToken()
 
-FedEx APIs use the OAuth 2.0 protocol for authentication and authorization using the `client_credentials` grant type. Tokens are cached in-process per account number until shortly before they expire.
+FedEx APIs use the OAuth 2.0 protocol for authentication and authorization using the `client_credentials` grant type. Tokens are cached in-process per API key until shortly before they expire.
 
 See: https://developer.fedex.com/api/en-us/catalog/authorization.html
 
@@ -60,32 +58,38 @@ console.log(accessToken);
 // }
 ```
 
-### rates(requestedShipment, options)
+### rateAndTransitTimes(rateRequest, options)
 
-Request rate quotes for a shipment. The caller supplies only the `requestedShipment` body; the package fills the top-level `accountNumber` and `rateRequestControlParameters` envelope.
+Request rate quotes and transit times from FedEx. The caller supplies the full request body — `accountNumber`, `requestedShipment`, and any of `rateRequestControlParameters`, `carrierCodes`, `processingOptions`, `version` — and the package forwards it verbatim.
 
-Pass `options.account_number` to rate against an account other than the one provided to the constructor (useful when one OAuth identity covers multiple accounts).
-
-See: https://developer.fedex.com/api/en-us/catalog/rate.html
+See: https://developer.fedex.com/api/en-us/catalog/rate/v1/docs.html
 
 ```javascript
-const body = await fedex.rates({
-    packagingType: 'YOUR_PACKAGING',
-    pickupType: 'USE_SCHEDULED_PICKUP',
-    recipient: {
-        address: { countryCode: 'US', postalCode: '10001' }
+const json = await fedex.rateAndTransitTimes({
+    accountNumber: { value: 'your_account_number' },
+    rateRequestControlParameters: {
+        rateSortOrder: 'SERVICENAMETRADITIONAL',
+        returnTransitTime: true,
+        servicesNeededOnRateFailure: true
     },
-    requestedPackageLineItems: [{ weight: { units: 'LB', value: 5 } }],
-    serviceType: 'FEDEX_GROUND',
-    shipper: {
-        address: { countryCode: 'US', postalCode: '38116' }
+    requestedShipment: {
+        packagingType: 'YOUR_PACKAGING',
+        pickupType: 'USE_SCHEDULED_PICKUP',
+        recipient: {
+            address: { countryCode: 'US', postalCode: '10001' }
+        },
+        requestedPackageLineItems: [{ weight: { units: 'LB', value: 5 } }],
+        serviceType: 'FEDEX_GROUND',
+        shipper: {
+            address: { countryCode: 'US', postalCode: '38116' }
+        }
     }
 });
 
-const detail = body.output.rateReplyDetails[0].ratedShipmentDetails[0];
+const detail = json.output.rateReplyDetails[0].ratedShipmentDetails[0];
 
 console.log(detail.totalNetCharge);
 // 24.17
 ```
 
-If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with `Error('${code}: ${message}')` from the first entry. Non-2xx responses reject with `HttpError`.
+Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `"${code}: ${message}"` joined by `; ` and whose `.json` is the full response body.

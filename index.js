@@ -1,5 +1,4 @@
 const cache = require('memory-cache');
-
 const HttpError = require('@stores.com/http-error');
 
 function FedEx(args) {
@@ -45,24 +44,17 @@ function FedEx(args) {
     };
 
     /**
-     * Request rate quotes from FedEx for a shipment. The caller supplies only the requestedShipment body;
-     * the package fills the top-level accountNumber and rateRequestControlParameters envelope.
-     * Pass `options.account_number` to override the constructor's account number for this call.
-     * @see https://developer.fedex.com/api/en-us/catalog/rate.html
+     * Rates and Transit Times: request rate quotes and transit times from FedEx.
+     * The caller supplies the full request body (accountNumber, requestedShipment, and any of
+     * rateRequestControlParameters, carrierCodes, processingOptions, version, etc.);
+     * the package forwards it verbatim.
+     * @see https://developer.fedex.com/api/en-us/catalog/rate/v1/docs.html
      */
-    this.rates = async (requestedShipment, _options = {}) => {
+    this.rateAndTransitTimes = async (rateRequest, _options = {}) => {
         const accessToken = await this.getAccessToken();
 
         const res = await fetch(`${options.url}/rate/v1/rates/quotes`, {
-            body: JSON.stringify({
-                accountNumber: { value: _options.account_number || options.account_number },
-                rateRequestControlParameters: {
-                    rateSortOrder: 'SERVICENAMETRADITIONAL',
-                    returnTransitTime: true,
-                    servicesNeededOnRateFailure: true
-                },
-                requestedShipment
-            }),
+            body: JSON.stringify(rateRequest),
             headers: {
                 Authorization: `Bearer ${accessToken.access_token}`,
                 'Content-Type': 'application/json'
@@ -75,16 +67,16 @@ function FedEx(args) {
             throw await HttpError.from(res);
         }
 
-        const body = await res.json();
+        const json = await res.json();
 
-        if (body.errors?.length) {
+        if (json.errors?.length) {
             const err = new HttpError(res);
-            err.message = `${body.errors[0].code}: ${body.errors[0].message}`;
-            err.json = body;
+            err.message = json.errors.map((e) => `${e.code}: ${e.message}`).join('; ');
+            err.json = json;
             throw err;
         }
 
-        return body;
+        return json;
     };
 }
 
