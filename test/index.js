@@ -1,6 +1,6 @@
 const assert = require('node:assert');
 const test = require('node:test');
-const { setTimeout: sleep } = require('node:timers/promises');
+const sleep = require('node:timers/promises').setTimeout;
 
 const FedEx = require('../index');
 
@@ -28,7 +28,9 @@ function mockOAuthResponse() {
     });
 }
 
-function shipment({ serviceType, smartPost } = {}) {
+function shipment(opts) {
+    opts = opts || {};
+
     const body = {
         packagingType: 'YOUR_PACKAGING',
         pickupType: 'USE_SCHEDULED_PICKUP',
@@ -50,9 +52,9 @@ function shipment({ serviceType, smartPost } = {}) {
         },
         requestedPackageLineItems: [{
             groupPackageCount: 1,
-            weight: { units: 'LB', value: smartPost ? 0.5 : 5 }
+            weight: { units: 'LB', value: opts.smartPost ? 0.5 : 5 }
         }],
-        serviceType: serviceType || 'FEDEX_GROUND',
+        serviceType: opts.serviceType || 'FEDEX_GROUND',
         shipDateStamp: new Date().toISOString().slice(0, 10),
         shipper: {
             address: {
@@ -70,7 +72,7 @@ function shipment({ serviceType, smartPost } = {}) {
         totalPackageCount: 1
     };
 
-    if (smartPost) {
+    if (opts.smartPost) {
         body.smartPostInfoDetail = {
             ancillaryEndorsement: 'ADDRESS_CORRECTION',
             hubId: process.env.FEDEX_SMART_POST_HUB_ID,
