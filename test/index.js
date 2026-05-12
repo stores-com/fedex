@@ -253,7 +253,63 @@ test('rateAndTransitTimes (mocked)', async (t) => {
 });
 
 test('validateAddress', { concurrency: true }, async (t) => {
-    t.test('should return resolved addresses', async () => {
+    t.test('should classify a residential address as RESIDENTIAL', async () => {
+        const fedex = new FedEx({
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const body = await retry(() => fedex.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'Chicago',
+                    countryCode: 'US',
+                    postalCode: '60639',
+                    stateOrProvinceCode: 'IL',
+                    streetLines: ['5132 W Altgeld St']
+                }
+            }]
+        }));
+
+        assert(body.transactionId);
+        assert.strictEqual(body.output.resolvedAddresses.length, 1);
+
+        const resolved = body.output.resolvedAddresses[0];
+
+        assert.strictEqual(resolved.classification, 'RESIDENTIAL');
+        assert.strictEqual(resolved.attributes.Resolved, true);
+    });
+
+    t.test('should classify a business address as BUSINESS', async () => {
+        const fedex = new FedEx({
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const body = await retry(() => fedex.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'Carrollton',
+                    countryCode: 'US',
+                    postalCode: '75010',
+                    stateOrProvinceCode: 'TX',
+                    streetLines: ['1950 Parker Road']
+                }
+            }]
+        }));
+
+        assert(body.transactionId);
+        assert.strictEqual(body.output.resolvedAddresses.length, 1);
+
+        const resolved = body.output.resolvedAddresses[0];
+
+        assert.strictEqual(resolved.classification, 'BUSINESS');
+        assert.strictEqual(resolved.attributes.Resolved, true);
+    });
+
+    t.test('should classify a mixed-use address as MIXED', async () => {
         const fedex = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
@@ -265,17 +321,74 @@ test('validateAddress', { concurrency: true }, async (t) => {
                 address: {
                     city: 'New York',
                     countryCode: 'US',
-                    postalCode: '10118',
+                    postalCode: '10012',
                     stateOrProvinceCode: 'NY',
-                    streetLines: ['350 5th Ave']
+                    streetLines: ['75 Spring St']
                 }
             }]
         }));
 
-        assert(body);
         assert(body.transactionId);
-        assert(body.output);
-        assert(Array.isArray(body.output.resolvedAddresses));
+        assert.strictEqual(body.output.resolvedAddresses.length, 1);
+
+        const resolved = body.output.resolvedAddresses[0];
+
+        assert.strictEqual(resolved.classification, 'MIXED');
+        assert.strictEqual(resolved.attributes.Resolved, true);
+    });
+
+    t.test('should classify an unclassified address as UNKNOWN', async () => {
+        const fedex = new FedEx({
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const body = await retry(() => fedex.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'Crowheart',
+                    countryCode: 'US',
+                    postalCode: '82512',
+                    stateOrProvinceCode: 'WY',
+                    streetLines: ['1 Crow Heart Rd']
+                }
+            }]
+        }));
+
+        assert(body.transactionId);
+        assert.strictEqual(body.output.resolvedAddresses.length, 1);
+
+        const resolved = body.output.resolvedAddresses[0];
+
+        assert.strictEqual(resolved.classification, 'UNKNOWN');
+    });
+
+    t.test('should mark a non-deliverable address as not Resolved', async () => {
+        const fedex = new FedEx({
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const body = await retry(() => fedex.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'Chicago',
+                    countryCode: 'US',
+                    postalCode: '60639',
+                    stateOrProvinceCode: 'IL',
+                    streetLines: ['9999 Imaginary Way']
+                }
+            }]
+        }));
+
+        assert(body.transactionId);
+        assert.strictEqual(body.output.resolvedAddresses.length, 1);
+
+        const resolved = body.output.resolvedAddresses[0];
+
+        assert.strictEqual(resolved.attributes.Resolved, false);
     });
 });
 
