@@ -133,20 +133,6 @@ test('getAccessToken', { concurrency: true }, async (t) => {
     });
 });
 
-function addressValidationRequest() {
-    return {
-        addressesToValidate: [{
-            address: {
-                city: 'New York',
-                countryCode: 'US',
-                postalCode: '10118',
-                stateOrProvinceCode: 'NY',
-                streetLines: ['350 5th Ave']
-            }
-        }]
-    };
-}
-
 function rateRequest(opts) {
     return {
         accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
@@ -265,6 +251,20 @@ test('rateAndTransitTimes (mocked)', async (t) => {
         assert.strictEqual(sentHeader, 'abc-123');
     });
 });
+
+function addressValidationRequest() {
+    return {
+        addressesToValidate: [{
+            address: {
+                city: 'New York',
+                countryCode: 'US',
+                postalCode: '10118',
+                stateOrProvinceCode: 'NY',
+                streetLines: ['350 5th Ave']
+            }
+        }]
+    };
+}
 
 test('validateAddress', { concurrency: true }, async (t) => {
     t.test('should return resolved addresses', async () => {
