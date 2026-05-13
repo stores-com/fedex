@@ -992,3 +992,353 @@ test('validateAddress (mocked)', async (t) => {
         });
     });
 });
+
+test('createShipment', { concurrency: true }, async (t) => {
+    t.test('should create a FedEx Ground shipment', async () => {
+        const fedex = new FedEx({
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const body = await async.retry(async () => fedex.createShipment({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            labelResponseOptions: 'URL_ONLY',
+            requestedShipment: {
+                packagingType: 'YOUR_PACKAGING',
+                pickupType: 'USE_SCHEDULED_PICKUP',
+                recipients: [{
+                    address: {
+                        city: 'New York',
+                        countryCode: 'US',
+                        postalCode: '10001',
+                        stateOrProvinceCode: 'NY',
+                        streetLines: ['10 FedEx Pkwy']
+                    },
+                    contact: {
+                        personName: 'Test Recipient',
+                        phoneNumber: '0000000000'
+                    }
+                }],
+                requestedPackageLineItems: [{
+                    weight: { units: 'LB', value: 5 }
+                }],
+                serviceType: 'FEDEX_GROUND',
+                shipper: {
+                    address: {
+                        city: 'Memphis',
+                        countryCode: 'US',
+                        postalCode: '38116',
+                        stateOrProvinceCode: 'TN',
+                        streetLines: ['10 FedEx Pkwy']
+                    },
+                    contact: {
+                        companyName: 'Test Shipper',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                labelSpecification: {
+                    imageType: 'PNG',
+                    labelStockType: 'PAPER_4X6'
+                },
+                shippingChargesPayment: { paymentType: 'SENDER' }
+            }
+        }));
+
+        assert(body);
+        assert(body.transactionId);
+        assert(body.output);
+    });
+});
+
+test('createShipment (mocked)', async (t) => {
+    t.test('should send options.customer_transaction_id as x-customer-transaction-id header and use POST method', async (t) => {
+        let sentHeader;
+        let sentMethod;
+
+        t.mock.method(globalThis, 'fetch', async (url, init) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/shipments')) {
+                sentHeader = init.headers['x-customer-transaction-id'];
+                sentMethod = init.method;
+                return new Response(JSON.stringify({ output: { transactionShipments: [{ masterTrackingNumber: '794644790138' }] }, transactionId: 'mock' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await fedex.createShipment({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            labelResponseOptions: 'URL_ONLY',
+            requestedShipment: {
+                packagingType: 'YOUR_PACKAGING',
+                pickupType: 'USE_SCHEDULED_PICKUP',
+                recipients: [{
+                    address: { countryCode: 'US', postalCode: '10001' },
+                    contact: { personName: 'Test', phoneNumber: '0000000000' }
+                }],
+                requestedPackageLineItems: [{ weight: { units: 'LB', value: 5 } }],
+                serviceType: 'FEDEX_GROUND',
+                shipper: {
+                    address: { countryCode: 'US', postalCode: '38116' },
+                    contact: { companyName: 'Test', phoneNumber: '0000000000' }
+                },
+                shippingChargesPayment: { paymentType: 'SENDER' }
+            }
+        }, { customer_transaction_id: 'abc-123' });
+
+        assert.strictEqual(sentHeader, 'abc-123');
+        assert.strictEqual(sentMethod, 'POST');
+    });
+
+    t.test('should throw HttpError for 200 response with errors envelope', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/shipments')) {
+                return new Response(JSON.stringify({
+                    errors: [
+                        { code: 'SHIPMENT.CREATE.FAILURE', message: 'Invalid request' }
+                    ],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedex.createShipment({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            labelResponseOptions: 'URL_ONLY',
+            requestedShipment: {}
+        }), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            return true;
+        });
+    });
+
+    t.test('should throw HttpError for non 2xx response', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/shipments')) {
+                return new Response('', { status: 500, statusText: 'Internal Server Error' });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedex.createShipment({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            labelResponseOptions: 'URL_ONLY',
+            requestedShipment: {}
+        }), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            assert.match(err.message, /^500/);
+            return true;
+        });
+    });
+});
+
+test('cancelShipment', { concurrency: true }, async (t) => {
+    t.test('should cancel a previously created shipment', async () => {
+        const fedex = new FedEx({
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const shipment = await async.retry(async () => fedex.createShipment({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            labelResponseOptions: 'URL_ONLY',
+            requestedShipment: {
+                packagingType: 'YOUR_PACKAGING',
+                pickupType: 'USE_SCHEDULED_PICKUP',
+                recipients: [{
+                    address: {
+                        city: 'New York',
+                        countryCode: 'US',
+                        postalCode: '10001',
+                        stateOrProvinceCode: 'NY',
+                        streetLines: ['10 FedEx Pkwy']
+                    },
+                    contact: {
+                        personName: 'Test Recipient',
+                        phoneNumber: '0000000000'
+                    }
+                }],
+                requestedPackageLineItems: [{
+                    weight: { units: 'LB', value: 5 }
+                }],
+                serviceType: 'FEDEX_GROUND',
+                shipper: {
+                    address: {
+                        city: 'Memphis',
+                        countryCode: 'US',
+                        postalCode: '38116',
+                        stateOrProvinceCode: 'TN',
+                        streetLines: ['10 FedEx Pkwy']
+                    },
+                    contact: {
+                        companyName: 'Test Shipper',
+                        phoneNumber: '0000000000'
+                    }
+                },
+                labelSpecification: {
+                    imageType: 'PNG',
+                    labelStockType: 'PAPER_4X6'
+                },
+                shippingChargesPayment: { paymentType: 'SENDER' }
+            }
+        }));
+
+        const trackingNumber = shipment.output.transactionShipments[0].masterTrackingNumber;
+
+        assert(trackingNumber);
+
+        const body = await async.retry(async () => fedex.cancelShipment({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            deletionControl: 'DELETE_ALL_PACKAGES',
+            senderCountryCode: 'US',
+            trackingNumber
+        }));
+
+        assert(body);
+        assert(body.transactionId);
+    });
+});
+
+test('cancelShipment (mocked)', async (t) => {
+    t.test('should send options.customer_transaction_id as x-customer-transaction-id header and use PUT method', async (t) => {
+        let sentHeader;
+        let sentMethod;
+
+        t.mock.method(globalThis, 'fetch', async (url, init) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/shipments/cancel')) {
+                sentHeader = init.headers['x-customer-transaction-id'];
+                sentMethod = init.method;
+                return new Response(JSON.stringify({ output: { cancelledShipment: true }, transactionId: 'mock' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await fedex.cancelShipment({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            deletionControl: 'DELETE_ALL_PACKAGES',
+            senderCountryCode: 'US',
+            trackingNumber: '794644790138'
+        }, { customer_transaction_id: 'abc-123' });
+
+        assert.strictEqual(sentHeader, 'abc-123');
+        assert.strictEqual(sentMethod, 'PUT');
+    });
+
+    t.test('should throw HttpError for 200 response with errors envelope', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/shipments/cancel')) {
+                return new Response(JSON.stringify({
+                    errors: [
+                        { code: 'SHIPMENT.CANCEL.FAILURE', message: 'Shipment already tendered' }
+                    ],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedex.cancelShipment({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            deletionControl: 'DELETE_ALL_PACKAGES',
+            senderCountryCode: 'US',
+            trackingNumber: '794644790138'
+        }), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            return true;
+        });
+    });
+
+    t.test('should throw HttpError for non 2xx response', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/shipments/cancel')) {
+                return new Response('', { status: 500, statusText: 'Internal Server Error' });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedex.cancelShipment({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            deletionControl: 'DELETE_ALL_PACKAGES',
+            senderCountryCode: 'US',
+            trackingNumber: '794644790138'
+        }), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            assert.match(err.message, /^500/);
+            return true;
+        });
+    });
+});
+

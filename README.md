@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@stores.com/fedex)](https://www.npmjs.com/package/@stores.com/fedex)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-FedEx REST API client for OAuth tokens, Rates and Transit Times, and Address Validation.
+FedEx REST API client for OAuth tokens, Rates and Transit Times, Address Validation, Shipment Creation, and Shipment Cancellation.
 
 ## Installation
 
@@ -117,6 +117,76 @@ const resolved = json.output.resolvedAddresses[0];
 
 console.log(resolved.classification);
 // 'RESIDENTIAL'
+```
+
+Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).
+
+### createShipment(shipRequest, options)
+
+Create a FedEx shipment via the Ship API. This is the REST equivalent of the SOAP `processShipment` operation. The caller supplies the full request body — `accountNumber`, `labelResponseOptions`, `requestedShipment` — and the package forwards it verbatim.
+
+See: https://developer.fedex.com/api/en-us/catalog/ship/v1/docs.html
+
+```javascript
+const json = await fedex.createShipment({
+    accountNumber: { value: 'your_account_number' },
+    labelResponseOptions: 'URL_ONLY',
+    requestedShipment: {
+        packagingType: 'YOUR_PACKAGING',
+        pickupType: 'USE_SCHEDULED_PICKUP',
+        recipients: [{
+            address: {
+                city: 'New York',
+                countryCode: 'US',
+                postalCode: '10001',
+                stateOrProvinceCode: 'NY',
+                streetLines: ['10 FedEx Pkwy']
+            },
+            contact: {
+                personName: 'Test Recipient',
+                phoneNumber: '0000000000'
+            }
+        }],
+        requestedPackageLineItems: [{ weight: { units: 'LB', value: 5 } }],
+        serviceType: 'FEDEX_GROUND',
+        shipper: {
+            address: {
+                city: 'Memphis',
+                countryCode: 'US',
+                postalCode: '38116',
+                stateOrProvinceCode: 'TN',
+                streetLines: ['10 FedEx Pkwy']
+            },
+            contact: {
+                companyName: 'Test Shipper',
+                phoneNumber: '0000000000'
+            }
+        },
+        shippingChargesPayment: { paymentType: 'SENDER' }
+    }
+});
+
+const trackingNumber = json.output.transactionShipments[0].masterTrackingNumber;
+
+console.log(trackingNumber);
+// '794644790138'
+```
+
+Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).
+
+### cancelShipment(cancelRequest, options)
+
+Cancel a FedEx shipment via the Ship API. This is the REST equivalent of the SOAP `deleteShipment` operation. The caller supplies the full request body — `accountNumber`, `trackingNumber`, `senderCountryCode`, `deletionControl` — and the package forwards it verbatim.
+
+See: https://developer.fedex.com/api/en-us/catalog/ship/v1/docs.html
+
+```javascript
+const json = await fedex.cancelShipment({
+    accountNumber: { value: 'your_account_number' },
+    deletionControl: 'DELETE_ALL_PACKAGES',
+    senderCountryCode: 'US',
+    trackingNumber: '794644790138'
+});
 ```
 
 Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).

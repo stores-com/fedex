@@ -3,7 +3,7 @@
         "@stores.com/http-error": "~1.1.0",
         "memory-cache": "~0.2.0"
     },
-    "description": "FedEx REST API client for OAuth tokens, rate quotes, and address validation.",
+    "description": "FedEx REST API client for OAuth tokens, rate quotes, address validation, shipment creation, and shipment cancellation.",
     "devDependencies": {
         "@eslint/js": "*",
         "async": "~3.2.0",
@@ -11,9 +11,12 @@
     },
     "keywords": [
         "address-validation",
+        "cancel",
+        "create",
         "fedex",
         "logistics",
         "rates",
+        "ship",
         "shipping"
     ],
     "license": "MIT",
@@ -30,5 +33,5 @@
         "test": "node --test --test-force-exit --test-reporter=spec",
         "test:only": "node --test --test-force-exit --test-only --test-reporter=spec"
     },
-    "version": "0.2.0"
+    "version": "0.3.0"
 }
