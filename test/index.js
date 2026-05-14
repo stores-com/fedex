@@ -230,7 +230,7 @@ test('close (mocked)', async (t) => {
                 });
             }
 
-            if (url.endsWith('/ship/v1/endofday/close')) {
+            if (url.endsWith('/ship/v1/endofday')) {
                 sentBody = JSON.parse(init.body);
                 return new Response(JSON.stringify({ output: { closeDocuments: [] }, transactionId: 'mock' }), {
                     headers: { 'Content-Type': 'application/json' },
@@ -276,7 +276,7 @@ test('close (mocked)', async (t) => {
                 });
             }
 
-            if (url.endsWith('/ship/v1/endofday/close')) {
+            if (url.endsWith('/ship/v1/endofday')) {
                 sentHeader = init.headers['x-customer-transaction-id'];
                 sentMethod = init.method;
                 return new Response(JSON.stringify({ output: { closeDocuments: [] }, transactionId: 'mock' }), {
@@ -308,7 +308,7 @@ test('close (mocked)', async (t) => {
                 });
             }
 
-            if (url.endsWith('/ship/v1/endofday/close')) {
+            if (url.endsWith('/ship/v1/endofday')) {
                 return new Response(JSON.stringify({
                     errors: [
                         { code: 'CLOSE.FAILURE', message: 'No shipments to close' }
@@ -343,7 +343,7 @@ test('close (mocked)', async (t) => {
                 });
             }
 
-            if (url.endsWith('/ship/v1/endofday/close')) {
+            if (url.endsWith('/ship/v1/endofday')) {
                 return new Response('', { status: 500, statusText: 'Internal Server Error' });
             }
 

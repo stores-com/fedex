@@ -77,7 +77,7 @@ function FedEx(args) {
             headers['x-customer-transaction-id'] = options.customer_transaction_id;
         }
 
-        const response = await fetch(`${_options.url}/ship/v1/endofday/close`, {
+        const response = await fetch(`${_options.url}/ship/v1/endofday`, {
             body: JSON.stringify(closeRequest),
             headers,
             method: 'POST',
