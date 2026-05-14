@@ -150,7 +150,7 @@ function FedEx(args) {
      * @param {string} [options.customer_transaction_id] - Sent as the `x-customer-transaction-id`
      *   request header. FedEx echoes this back so callers can correlate requests with responses.
      * @param {number} [options.timeout=30000] - Request timeout in milliseconds.
-     * @returns {Promise<object>} The parsed response body.
+     * @returns {Promise<object>} The parsed response body, including `output.closeDocuments[]`.
      * @see https://developer.fedex.com/api/en-us/catalog/close/v1/docs.html
      */
     this.groundClose = async (closeRequest, options = {}) => {
