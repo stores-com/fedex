@@ -404,7 +404,7 @@ test('getAccessToken', { concurrency: true }, async (t) => {
     });
 });
 
-test('groundClose', async (t) => {
+test('groundClose', { concurrency: true }, async (t) => {
     t.test('should close ground shipments', async () => {
         const fedex = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
