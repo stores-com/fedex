@@ -53,6 +53,51 @@ function FedEx(args) {
     };
 
     /**
+     * Close out FedEx shipments via the Ground End of Day Close API. The caller
+     * supplies the full request body — `accountNumber`, `closeReqType`,
+     * `smartPostDetail` — and the package forwards it verbatim.
+     *
+     * @param {object} closeRequest - Full Ground End of Day Close request body.
+     * @param {object} [options]
+     * @param {string} [options.customer_transaction_id] - Sent as the `x-customer-transaction-id`
+     *   request header. FedEx echoes this back so callers can correlate requests with responses.
+     * @param {number} [options.timeout=30000] - Request timeout in milliseconds.
+     * @returns {Promise<object>} The parsed response body.
+     * @see https://developer.fedex.com/api/en-us/catalog/ship/v1/docs.html
+     */
+    this.close = async (closeRequest, options = {}) => {
+        const accessToken = await this.getAccessToken();
+
+        const headers = {
+            Authorization: `Bearer ${accessToken.access_token}`,
+            'Content-Type': 'application/json'
+        };
+
+        if (options.customer_transaction_id) {
+            headers['x-customer-transaction-id'] = options.customer_transaction_id;
+        }
+
+        const response = await fetch(`${_options.url}/ship/v1/endofday/close`, {
+            body: JSON.stringify(closeRequest),
+            headers,
+            method: 'POST',
+            signal: AbortSignal.timeout(options.timeout || 30000)
+        });
+
+        if (!response.ok) {
+            throw await HttpError.from(response);
+        }
+
+        const json = await response.json();
+
+        if (json.errors?.length) {
+            throw await HttpError.from(response);
+        }
+
+        return json;
+    };
+
+    /**
      * Create a FedEx shipment via the Ship API. The caller supplies the full
      * request body — `accountNumber`, `labelResponseOptions`, `requestedShipment`
      * — and the package forwards it verbatim.

@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@stores.com/fedex)](https://www.npmjs.com/package/@stores.com/fedex)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-FedEx REST API client for Address Validation, OAuth tokens, Rates and Transit Times, Shipment Cancellation, and Shipment Creation.
+FedEx REST API client for Address Validation, Ground End of Day Close, OAuth tokens, Rates and Transit Times, Shipment Cancellation, and Shipment Creation.
 
 ## Installation
 
@@ -52,6 +52,21 @@ const json = await fedex.cancelShipment({
     deletionControl: 'DELETE_ALL_PACKAGES',
     senderCountryCode: 'US',
     trackingNumber: '794644790138'
+});
+```
+
+Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).
+
+### close(closeRequest, options)
+
+Close out FedEx shipments via the Ground End of Day Close API. The caller supplies the full request body — `accountNumber`, `closeReqType`, `smartPostDetail` — and the package forwards it verbatim.
+
+See: https://developer.fedex.com/api/en-us/catalog/ship/v1/docs.html
+
+```javascript
+const json = await fedex.close({
+    accountNumber: { value: 'your_account_number' },
+    closeReqType: 'GCCLOSE'
 });
 ```
 

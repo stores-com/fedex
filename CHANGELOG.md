@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+- Add `close(closeRequest, options)` — calls the FedEx Ground End of Day Close API (`POST /ship/v1/endofday/close`). Same passthrough pattern as the other methods: caller supplies the full request body, the package forwards it verbatim. Supports `options.customer_transaction_id` and `options.timeout`. Non-2xx responses and 200-with-`errors[]` envelopes both reject with `HttpError`.
+
 ## 0.3.0
 
 - Add `createShipment(shipRequest, options)` — calls the FedEx Ship API to create a shipment (`POST /ship/v1/shipments`). Same passthrough pattern as the other methods: caller supplies the full request body, the package forwards it verbatim. Supports `options.customer_transaction_id` and `options.timeout`. Non-2xx responses and 200-with-`errors[]` envelopes both reject with `HttpError`.
