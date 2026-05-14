@@ -3,7 +3,7 @@
         "@stores.com/http-error": "~1.1.0",
         "memory-cache": "~0.2.0"
     },
-    "description": "FedEx REST API client for OAuth tokens, rate quotes, address validation, shipment creation, and shipment cancellation.",
+    "description": "FedEx REST API client for address validation, OAuth tokens, rate quotes, shipment cancellation, and shipment creation.",
     "devDependencies": {
         "@eslint/js": "*",
         "async": "~3.2.0",
