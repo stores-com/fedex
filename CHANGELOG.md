@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- Add `createShipment(shipRequest, options)` — calls the FedEx Ship API to create a shipment (`POST /ship/v1/shipments`). Same passthrough pattern as the other methods: caller supplies the full request body, the package forwards it verbatim. Supports `options.customer_transaction_id` and `options.timeout`. Non-2xx responses and 200-with-`errors[]` envelopes both reject with `HttpError`.
+- Add `cancelShipment(cancelRequest, options)` — calls the FedEx Ship API to cancel a shipment (`PUT /ship/v1/shipments/cancel`). Same passthrough pattern. Supports `options.customer_transaction_id` and `options.timeout`. Non-2xx responses and 200-with-`errors[]` envelopes both reject with `HttpError`.
+
 ## 0.2.0
 
 - Add `validateAddress(addressValidationRequest, options)` — calls the FedEx Address Validation API (`POST /address/v1/addresses/resolve`). Same passthrough pattern as `rateAndTransitTimes`: caller supplies the full request body, the package forwards it verbatim. Supports `options.customer_transaction_id` and `options.timeout` like the other methods. Non-2xx responses and 200-with-`errors[]` envelopes both reject with `HttpError`.
