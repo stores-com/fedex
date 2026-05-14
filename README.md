@@ -57,21 +57,6 @@ const json = await fedex.cancelShipment({
 
 Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).
 
-### close(closeRequest, options)
-
-Close out FedEx shipments via the Ground End of Day Close API. The caller supplies the full request body — `accountNumber`, `closeReqType`, `smartPostDetail` — and the package forwards it verbatim.
-
-See: https://developer.fedex.com/api/en-us/catalog/ship/v1/docs.html
-
-```javascript
-const json = await fedex.close({
-    accountNumber: { value: 'your_account_number' },
-    closeReqType: 'GCCLOSE'
-});
-```
-
-Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).
-
 ### createShipment(shipRequest, options)
 
 Create a FedEx shipment via the Ship API. The caller supplies the full request body — `accountNumber`, `labelResponseOptions`, `requestedShipment` — and the package forwards it verbatim.
@@ -142,6 +127,23 @@ console.log(accessToken);
 //     token_type: 'bearer'
 // }
 ```
+
+### groundClose(closeRequest, options)
+
+Close out FedEx Ground shipments via the Ground End of Day Close API. The caller supplies the full request body — `accountNumber`, `closeDate`, `closeReqType`, `groundServiceCategory` — and the package forwards it verbatim.
+
+See: https://developer.fedex.com/api/en-us/catalog/close/v1/docs.html
+
+```javascript
+const json = await fedex.groundClose({
+    accountNumber: { value: 'your_account_number' },
+    closeDate: '2026-05-14',
+    closeReqType: 'GCDR',
+    groundServiceCategory: 'GROUND'
+});
+```
+
+Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).
 
 ### rateAndTransitTimes(rateRequest, options)
 

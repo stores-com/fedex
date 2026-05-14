@@ -3,7 +3,7 @@
         "@stores.com/http-error": "~1.1.0",
         "memory-cache": "~0.2.0"
     },
-    "description": "FedEx REST API client for address validation, end of day close, OAuth tokens, rate quotes, shipment cancellation, and shipment creation.",
+    "description": "FedEx REST API client for address validation, ground end of day close, OAuth tokens, rate quotes, shipment cancellation, and shipment creation.",
     "devDependencies": {
         "@eslint/js": "*",
         "async": "~3.2.0",
@@ -12,7 +12,7 @@
     "keywords": [
         "address-validation",
         "cancel",
-        "close",
+        "ground-close",
         "create",
         "fedex",
         "logistics",
