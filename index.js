@@ -140,10 +140,9 @@ function FedEx(args) {
     };
 
     /**
-     * Create a FedEx shipment via the Ship API. REST equivalent of the SOAP
-     * `processShipment` operation. The caller supplies the full request body —
-     * `accountNumber`, `labelResponseOptions`, `requestedShipment` — and the
-     * package forwards it verbatim.
+     * Create a FedEx shipment via the Ship API. The caller supplies the full
+     * request body — `accountNumber`, `labelResponseOptions`, `requestedShipment`
+     * — and the package forwards it verbatim.
      *
      * @param {object} shipRequest - Full Create Shipment request body.
      * @param {object} [options]
@@ -186,10 +185,9 @@ function FedEx(args) {
     };
 
     /**
-     * Cancel a FedEx shipment via the Ship API. REST equivalent of the SOAP
-     * `deleteShipment` operation. The caller supplies the full request body —
-     * `accountNumber`, `trackingNumber`, `senderCountryCode`, `deletionControl` —
-     * and the package forwards it verbatim.
+     * Cancel a FedEx shipment via the Ship API. The caller supplies the full
+     * request body — `accountNumber`, `trackingNumber`, `senderCountryCode`,
+     * `deletionControl` — and the package forwards it verbatim.
      *
      * @param {object} cancelRequest - Full Cancel Shipment request body.
      * @param {object} [options]

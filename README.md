@@ -123,7 +123,7 @@ Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carry
 
 ### createShipment(shipRequest, options)
 
-Create a FedEx shipment via the Ship API. This is the REST equivalent of the SOAP `processShipment` operation. The caller supplies the full request body — `accountNumber`, `labelResponseOptions`, `requestedShipment` — and the package forwards it verbatim.
+Create a FedEx shipment via the Ship API. The caller supplies the full request body — `accountNumber`, `labelResponseOptions`, `requestedShipment` — and the package forwards it verbatim.
 
 See: https://developer.fedex.com/api/en-us/catalog/ship/v1/docs.html
 
@@ -176,7 +176,7 @@ Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carry
 
 ### cancelShipment(cancelRequest, options)
 
-Cancel a FedEx shipment via the Ship API. This is the REST equivalent of the SOAP `deleteShipment` operation. The caller supplies the full request body — `accountNumber`, `trackingNumber`, `senderCountryCode`, `deletionControl` — and the package forwards it verbatim.
+Cancel a FedEx shipment via the Ship API. The caller supplies the full request body — `accountNumber`, `trackingNumber`, `senderCountryCode`, `deletionControl` — and the package forwards it verbatim.
 
 See: https://developer.fedex.com/api/en-us/catalog/ship/v1/docs.html
 
