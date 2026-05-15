@@ -153,7 +153,7 @@ function FedEx(args) {
      * @returns {Promise<object>} The parsed response body, including `output.closeDocuments[]`.
      * @see https://developer.fedex.com/api/en-us/catalog/close/v1/docs.html
      */
-    this.groundClose = async (closeRequest, options = {}) => {
+    this.groundEndOfDayClose = async (closeRequest, options = {}) => {
         const accessToken = await this.getAccessToken();
 
         const headers = {

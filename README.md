@@ -128,14 +128,14 @@ console.log(accessToken);
 // }
 ```
 
-### groundClose(closeRequest, options)
+### groundEndOfDayClose(closeRequest, options)
 
 Close out FedEx Ground shipments via the Ground End of Day Close API. The caller supplies the full request body — `accountNumber`, `closeDate`, `closeReqType`, `groundServiceCategory` — and the package forwards it verbatim.
 
 See: https://developer.fedex.com/api/en-us/catalog/close/v1/docs.html
 
 ```javascript
-const json = await fedex.groundClose({
+const json = await fedex.groundEndOfDayClose({
     accountNumber: { value: 'your_account_number' },
     closeDate: '2026-05-14',
     closeReqType: 'GCDR',

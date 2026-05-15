@@ -404,7 +404,7 @@ test('getAccessToken', { concurrency: true }, async (t) => {
     });
 });
 
-test('groundClose', { concurrency: true }, async (t) => {
+test('groundEndOfDayClose', { concurrency: true }, async (t) => {
     t.test('should close ground shipments', async () => {
         const fedex = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
@@ -412,7 +412,7 @@ test('groundClose', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedex.groundClose({
+        const body = await async.retry(async () => fedex.groundEndOfDayClose({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             closeDate: new Date().toISOString().slice(0, 10),
             closeReqType: 'GCDR',
@@ -424,7 +424,7 @@ test('groundClose', { concurrency: true }, async (t) => {
     });
 });
 
-test('groundClose (mocked)', async (t) => {
+test('groundEndOfDayClose (mocked)', async (t) => {
     t.test('should forward close request body verbatim', async (t) => {
         let sentBody;
 
@@ -449,7 +449,7 @@ test('groundClose (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.groundClose({
+        await fedex.groundEndOfDayClose({
             accountNumber: { value: '123456789' },
             closeDate: '2026-05-14',
             closeReqType: 'GCDR',
@@ -490,7 +490,7 @@ test('groundClose (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.groundClose({
+        await fedex.groundEndOfDayClose({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             closeDate: '2026-05-14',
             closeReqType: 'GCDR',
@@ -527,7 +527,7 @@ test('groundClose (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.groundClose({
+        await assert.rejects(fedex.groundEndOfDayClose({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             closeDate: '2026-05-14',
             closeReqType: 'GCDR',
@@ -556,7 +556,7 @@ test('groundClose (mocked)', async (t) => {
 
         const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.groundClose({
+        await assert.rejects(fedex.groundEndOfDayClose({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             closeDate: '2026-05-14',
             closeReqType: 'GCDR',

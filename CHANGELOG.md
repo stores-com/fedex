@@ -2,7 +2,7 @@
 
 ## 0.4.0
 
-- Add `groundClose(closeRequest, options)` — calls the FedEx Ground End of Day Close API (`PUT /ship/v1/endofday/`). Same passthrough pattern as the other methods: caller supplies the full request body, the package forwards it verbatim. Supports `options.customer_transaction_id` and `options.timeout`. Non-2xx responses and 200-with-`errors[]` envelopes both reject with `HttpError`.
+- Add `groundEndOfDayClose(closeRequest, options)` — calls the FedEx Ground End of Day Close API (`PUT /ship/v1/endofday/`). Same passthrough pattern as the other methods: caller supplies the full request body, the package forwards it verbatim. Supports `options.customer_transaction_id` and `options.timeout`. Non-2xx responses and 200-with-`errors[]` envelopes both reject with `HttpError`.
 
 ## 0.3.0
 

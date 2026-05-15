@@ -14,7 +14,7 @@
         "cancel",
         "create",
         "fedex",
-        "ground-close",
+        "ground-end-of-day-close",
         "logistics",
         "rates",
         "ship",
