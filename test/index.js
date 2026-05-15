@@ -404,6 +404,171 @@ test('getAccessToken', { concurrency: true }, async (t) => {
     });
 });
 
+test('groundEndOfDayClose', { concurrency: true }, async (t) => {
+    t.test('should close ground shipments', async () => {
+        const fedex = new FedEx({
+            api_key: process.env.FEDEX_API_KEY,
+            secret_key: process.env.FEDEX_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const body = await async.retry(async () => fedex.groundEndOfDayClose({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            closeDate: new Date().toISOString().slice(0, 10),
+            closeReqType: 'GCDR',
+            groundServiceCategory: 'GROUND'
+        }));
+
+        assert(body);
+        assert(body.transactionId);
+    });
+});
+
+test('groundEndOfDayClose (mocked)', async (t) => {
+    t.test('should forward close request body verbatim', async (t) => {
+        let sentBody;
+
+        t.mock.method(globalThis, 'fetch', async (url, init) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/endofday/')) {
+                sentBody = JSON.parse(init.body);
+                return new Response(JSON.stringify({ output: { closeDocuments: [] }, transactionId: 'mock' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await fedex.groundEndOfDayClose({
+            accountNumber: { value: '123456789' },
+            closeDate: '2026-05-14',
+            closeReqType: 'GCDR',
+            groundServiceCategory: 'GROUND'
+        });
+
+        assert.deepStrictEqual(sentBody, {
+            accountNumber: { value: '123456789' },
+            closeDate: '2026-05-14',
+            closeReqType: 'GCDR',
+            groundServiceCategory: 'GROUND'
+        });
+    });
+
+    t.test('should send options.customer_transaction_id as x-customer-transaction-id header and use PUT method', async (t) => {
+        let sentHeader;
+        let sentMethod;
+
+        t.mock.method(globalThis, 'fetch', async (url, init) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/endofday/')) {
+                sentHeader = init.headers['x-customer-transaction-id'];
+                sentMethod = init.method;
+                return new Response(JSON.stringify({ output: { closeDocuments: [] }, transactionId: 'mock' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await fedex.groundEndOfDayClose({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            closeDate: '2026-05-14',
+            closeReqType: 'GCDR',
+            groundServiceCategory: 'GROUND'
+        }, { customer_transaction_id: 'abc-123' });
+
+        assert.strictEqual(sentHeader, 'abc-123');
+        assert.strictEqual(sentMethod, 'PUT');
+    });
+
+    t.test('should throw HttpError for 200 response with errors envelope', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/endofday/')) {
+                return new Response(JSON.stringify({
+                    errors: [
+                        { code: 'CLOSE.FAILURE', message: 'No shipments to close' }
+                    ],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedex.groundEndOfDayClose({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            closeDate: '2026-05-14',
+            closeReqType: 'GCDR',
+            groundServiceCategory: 'GROUND'
+        }), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            return true;
+        });
+    });
+
+    t.test('should throw HttpError for non 2xx response', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/endofday/')) {
+                return new Response('', { status: 500, statusText: 'Internal Server Error' });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedex.groundEndOfDayClose({
+            accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
+            closeDate: '2026-05-14',
+            closeReqType: 'GCDR',
+            groundServiceCategory: 'GROUND'
+        }), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            assert.match(err.message, /^500/);
+            return true;
+        });
+    });
+});
+
 test('rateAndTransitTimes', { concurrency: true }, async (t) => {
     t.test('should return rate quotes for a Ground shipment', async () => {
         const fedex = new FedEx({
