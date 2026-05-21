@@ -7,13 +7,13 @@ const FedEx = require('../index');
 
 test('cancelShipment', { concurrency: true }, async (t) => {
     t.test('should cancel a previously created shipment', async () => {
-        const fedex = new FedEx({
+        const fedEx = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
         });
 
-        const shipment = await async.retry(async () => fedex.createShipment({
+        const shipment = await async.retry(async () => fedEx.createShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             labelResponseOptions: 'URL_ONLY',
             requestedShipment: {
@@ -61,7 +61,7 @@ test('cancelShipment', { concurrency: true }, async (t) => {
 
         assert(trackingNumber);
 
-        const body = await async.retry(async () => fedex.cancelShipment({
+        const body = await async.retry(async () => fedEx.cancelShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             deletionControl: 'DELETE_ALL_PACKAGES',
             senderCountryCode: 'US',
@@ -98,9 +98,9 @@ test('cancelShipment (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.cancelShipment({
+        await fedEx.cancelShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             deletionControl: 'DELETE_ALL_PACKAGES',
             senderCountryCode: 'US',
@@ -135,9 +135,9 @@ test('cancelShipment (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.cancelShipment({
+        await assert.rejects(fedEx.cancelShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             deletionControl: 'DELETE_ALL_PACKAGES',
             senderCountryCode: 'US',
@@ -164,9 +164,9 @@ test('cancelShipment (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.cancelShipment({
+        await assert.rejects(fedEx.cancelShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             deletionControl: 'DELETE_ALL_PACKAGES',
             senderCountryCode: 'US',
@@ -181,13 +181,13 @@ test('cancelShipment (mocked)', async (t) => {
 
 test('createShipment', { concurrency: true }, async (t) => {
     t.test('should create a FedEx Ground shipment', async () => {
-        const fedex = new FedEx({
+        const fedEx = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedex.createShipment({
+        const body = await async.retry(async () => fedEx.createShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             labelResponseOptions: 'URL_ONLY',
             requestedShipment: {
@@ -262,9 +262,9 @@ test('createShipment (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.createShipment({
+        await fedEx.createShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             labelResponseOptions: 'URL_ONLY',
             requestedShipment: {
@@ -312,9 +312,9 @@ test('createShipment (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.createShipment({
+        await assert.rejects(fedEx.createShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             labelResponseOptions: 'URL_ONLY',
             requestedShipment: {}
@@ -340,9 +340,9 @@ test('createShipment (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.createShipment({
+        await assert.rejects(fedEx.createShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             labelResponseOptions: 'URL_ONLY',
             requestedShipment: {}
@@ -356,13 +356,13 @@ test('createShipment (mocked)', async (t) => {
 
 test('getAccessToken', { concurrency: true }, async (t) => {
     t.test('should return a valid access token', async () => {
-        const fedex = new FedEx({
+        const fedEx = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
         });
 
-        const accessToken = await fedex.getAccessToken();
+        const accessToken = await fedEx.getAccessToken();
 
         assert(accessToken);
         assert(accessToken.access_token);
@@ -371,19 +371,19 @@ test('getAccessToken', { concurrency: true }, async (t) => {
     });
 
     t.test('should return an error for invalid url', async () => {
-        const fedex = new FedEx({
+        const fedEx = new FedEx({
             url: 'invalid'
         });
 
-        await assert.rejects(fedex.getAccessToken(), { message: 'Failed to parse URL from invalid/oauth/token' });
+        await assert.rejects(fedEx.getAccessToken(), { message: 'Failed to parse URL from invalid/oauth/token' });
     });
 
     t.test('should return an error for non 200 status code', async () => {
-        const fedex = new FedEx({
+        const fedEx = new FedEx({
             url: 'https://httpbin.org/status/500#'
         });
 
-        await assert.rejects(fedex.getAccessToken(), (err) => {
+        await assert.rejects(fedEx.getAccessToken(), (err) => {
             assert.strictEqual(err.name, 'HttpError');
             assert.match(err.message, /^500/);
             return true;
@@ -391,14 +391,14 @@ test('getAccessToken', { concurrency: true }, async (t) => {
     });
 
     t.test('should return the same access token on subsequent calls', async () => {
-        const fedex = new FedEx({
+        const fedEx = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
         });
 
-        const accessToken1 = await fedex.getAccessToken();
-        const accessToken2 = await fedex.getAccessToken();
+        const accessToken1 = await fedEx.getAccessToken();
+        const accessToken2 = await fedEx.getAccessToken();
 
         assert.deepStrictEqual(accessToken2, accessToken1);
     });
@@ -406,13 +406,13 @@ test('getAccessToken', { concurrency: true }, async (t) => {
 
 test('groundEndOfDayClose', { concurrency: true }, async (t) => {
     t.test('should close ground shipments', async () => {
-        const fedex = new FedEx({
+        const fedEx = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedex.groundEndOfDayClose({
+        const body = await async.retry(async () => fedEx.groundEndOfDayClose({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             closeDate: new Date().toISOString().slice(0, 10),
             closeReqType: 'GCDR',
@@ -447,9 +447,9 @@ test('groundEndOfDayClose (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.groundEndOfDayClose({
+        await fedEx.groundEndOfDayClose({
             accountNumber: { value: '123456789' },
             closeDate: '2026-05-14',
             closeReqType: 'GCDR',
@@ -488,9 +488,9 @@ test('groundEndOfDayClose (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.groundEndOfDayClose({
+        await fedEx.groundEndOfDayClose({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             closeDate: '2026-05-14',
             closeReqType: 'GCDR',
@@ -525,9 +525,9 @@ test('groundEndOfDayClose (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.groundEndOfDayClose({
+        await assert.rejects(fedEx.groundEndOfDayClose({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             closeDate: '2026-05-14',
             closeReqType: 'GCDR',
@@ -554,9 +554,9 @@ test('groundEndOfDayClose (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.groundEndOfDayClose({
+        await assert.rejects(fedEx.groundEndOfDayClose({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             closeDate: '2026-05-14',
             closeReqType: 'GCDR',
@@ -571,13 +571,13 @@ test('groundEndOfDayClose (mocked)', async (t) => {
 
 test('rateAndTransitTimes', { concurrency: true }, async (t) => {
     t.test('should return rate quotes for a Ground shipment', async () => {
-        const fedex = new FedEx({
+        const fedEx = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedex.rateAndTransitTimes({
+        const body = await async.retry(async () => fedEx.rateAndTransitTimes({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             requestedShipment: {
                 packagingType: 'YOUR_PACKAGING',
@@ -628,13 +628,13 @@ test('rateAndTransitTimes', { concurrency: true }, async (t) => {
     });
 
     t.test('should return rate quotes for a SmartPost shipment', async () => {
-        const fedex = new FedEx({
+        const fedEx = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedex.rateAndTransitTimes({
+        const body = await async.retry(async () => fedEx.rateAndTransitTimes({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             requestedShipment: {
                 packagingType: 'YOUR_PACKAGING',
@@ -713,9 +713,9 @@ test('rateAndTransitTimes (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.rateAndTransitTimes({
+        await fedEx.rateAndTransitTimes({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             requestedShipment: {
                 packagingType: 'YOUR_PACKAGING',
@@ -787,9 +787,9 @@ test('rateAndTransitTimes (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.rateAndTransitTimes({
+        await assert.rejects(fedEx.rateAndTransitTimes({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             requestedShipment: {
                 packagingType: 'YOUR_PACKAGING',
@@ -853,9 +853,9 @@ test('rateAndTransitTimes (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.rateAndTransitTimes({
+        await assert.rejects(fedEx.rateAndTransitTimes({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             requestedShipment: {
                 packagingType: 'YOUR_PACKAGING',
@@ -1389,13 +1389,13 @@ test('track (mocked)', async (t) => {
 
 test('validateAddress', { concurrency: true }, async (t) => {
     t.test('should return resolved addresses', async () => {
-        const fedex = new FedEx({
+        const fedEx = new FedEx({
             api_key: process.env.FEDEX_API_KEY,
             secret_key: process.env.FEDEX_SECRET_KEY,
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedex.validateAddress({
+        const body = await async.retry(async () => fedEx.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'Chicago',
@@ -1486,9 +1486,9 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        const body = await fedex.validateAddress({
+        const body = await fedEx.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'Carrollton',
@@ -1579,9 +1579,9 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        const body = await fedex.validateAddress({
+        const body = await fedEx.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'New York',
@@ -1672,9 +1672,9 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        const body = await fedex.validateAddress({
+        const body = await fedEx.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'Chicago',
@@ -1756,9 +1756,9 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        const body = await fedex.validateAddress({
+        const body = await fedEx.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'Chicago',
@@ -1849,9 +1849,9 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        const body = await fedex.validateAddress({
+        const body = await fedEx.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'Crowheart',
@@ -1894,9 +1894,9 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.validateAddress({
+        await fedEx.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'New York',
@@ -1935,9 +1935,9 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.validateAddress({
+        await assert.rejects(fedEx.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'New York',
@@ -1969,9 +1969,9 @@ test('validateAddress (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.validateAddress({
+        await assert.rejects(fedEx.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'New York',
