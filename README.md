@@ -18,7 +18,7 @@ $ npm install @stores.com/fedex
 ```javascript
 const FedEx = require('@stores.com/fedex');
 
-const fedex = new FedEx({
+const fedEx = new FedEx({
     api_key: 'your_api_key',
     secret_key: 'your_secret_key'
 });
@@ -27,7 +27,7 @@ const fedex = new FedEx({
 By default the client targets the production endpoint (`https://apis.fedex.com`). To point at the sandbox, pass `url` explicitly:
 
 ```javascript
-const fedex = new FedEx({
+const fedEx = new FedEx({
     api_key: 'your_api_key',
     secret_key: 'your_secret_key',
     url: 'https://apis-sandbox.fedex.com'
@@ -47,7 +47,7 @@ Cancel a FedEx shipment via the Ship API. The caller supplies the full request b
 See: https://developer.fedex.com/api/en-us/catalog/ship/v1/docs.html
 
 ```javascript
-const json = await fedex.cancelShipment({
+const json = await fedEx.cancelShipment({
     accountNumber: { value: 'your_account_number' },
     deletionControl: 'DELETE_ALL_PACKAGES',
     senderCountryCode: 'US',
@@ -64,7 +64,7 @@ Create a FedEx shipment via the Ship API. The caller supplies the full request b
 See: https://developer.fedex.com/api/en-us/catalog/ship/v1/docs.html
 
 ```javascript
-const json = await fedex.createShipment({
+const json = await fedEx.createShipment({
     accountNumber: { value: 'your_account_number' },
     labelResponseOptions: 'URL_ONLY',
     requestedShipment: {
@@ -117,7 +117,7 @@ FedEx APIs use the OAuth 2.0 protocol for authentication and authorization using
 See: https://developer.fedex.com/api/en-us/catalog/authorization.html
 
 ```javascript
-const accessToken = await fedex.getAccessToken();
+const accessToken = await fedEx.getAccessToken();
 
 console.log(accessToken);
 // {
@@ -135,7 +135,7 @@ Close out FedEx Ground shipments via the Ground End of Day Close API. The caller
 See: https://developer.fedex.com/api/en-us/catalog/close/v1/docs.html
 
 ```javascript
-const json = await fedex.groundEndOfDayClose({
+const json = await fedEx.groundEndOfDayClose({
     accountNumber: { value: 'your_account_number' },
     closeDate: '2026-05-14',
     closeReqType: 'GCDR',
@@ -152,7 +152,7 @@ Request rate quotes and transit times from FedEx. The caller supplies the full r
 See: https://developer.fedex.com/api/en-us/catalog/rate/v1/docs.html
 
 ```javascript
-const json = await fedex.rateAndTransitTimes({
+const json = await fedEx.rateAndTransitTimes({
     accountNumber: { value: 'your_account_number' },
     rateRequestControlParameters: {
         rateSortOrder: 'SERVICENAMETRADITIONAL',
@@ -188,7 +188,7 @@ Validate and resolve addresses using the FedEx Address Validation API. The calle
 See: https://developer.fedex.com/api/en-us/catalog/address-validation/v1/docs.html
 
 ```javascript
-const json = await fedex.validateAddress({
+const json = await fedEx.validateAddress({
     addressesToValidate: [{
         address: {
             city: 'New York',
