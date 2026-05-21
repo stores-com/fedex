@@ -243,7 +243,7 @@ function FedEx(args) {
      * @returns {Promise<object>} The parsed response body, including `output.completeTrackResults[]`.
      * @see https://developer.fedex.com/api/en-us/catalog/track/v1/docs.html
      */
-    this.track = async (trackRequest, options = {}) => {
+    this.trackByTrackingNumber = async (trackRequest, options = {}) => {
         const accessToken = await this.getAccessToken();
 
         const headers = {

@@ -181,14 +181,14 @@ console.log(detail.totalNetCharge);
 
 Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).
 
-### track(trackRequest, options)
+### trackByTrackingNumber(trackRequest, options)
 
 Track a FedEx shipment via the Track API. The caller supplies the full request body — `includeDetailedScans`, `trackingInfo` — and the package forwards it verbatim.
 
 See: https://developer.fedex.com/api/en-us/catalog/track/v1/docs.html
 
 ```javascript
-const json = await fedex.track({
+const json = await fedEx.trackByTrackingNumber({
     includeDetailedScans: true,
     trackingInfo: [{
         trackingNumberInfo: {

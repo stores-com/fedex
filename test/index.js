@@ -905,7 +905,7 @@ test('rateAndTransitTimes (mocked)', async (t) => {
     });
 });
 
-test('track', { concurrency: true }, async (t) => {
+test('trackByTrackingNumber', { concurrency: true }, async (t) => {
     t.test('should track a shipment by tracking number', async () => {
         const fedEx = new FedEx({
             api_key: process.env.FEDEX_TRACK_API_KEY,
@@ -913,7 +913,7 @@ test('track', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedEx.track({
+        const body = await async.retry(async () => fedEx.trackByTrackingNumber({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
@@ -934,7 +934,7 @@ test('track', { concurrency: true }, async (t) => {
     });
 });
 
-test('track (mocked)', async (t) => {
+test('trackByTrackingNumber (mocked)', async (t) => {
     t.test('should return weight, dimensions, and service type for a delivered Ground shipment', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
@@ -1097,7 +1097,7 @@ test('track (mocked)', async (t) => {
 
         const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        const body = await fedEx.track({
+        const body = await fedEx.trackByTrackingNumber({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
@@ -1258,7 +1258,7 @@ test('track (mocked)', async (t) => {
 
         const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        const body = await fedEx.track({
+        const body = await fedEx.trackByTrackingNumber({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
@@ -1302,7 +1302,7 @@ test('track (mocked)', async (t) => {
 
         const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedEx.track({
+        await fedEx.trackByTrackingNumber({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
@@ -1341,7 +1341,7 @@ test('track (mocked)', async (t) => {
 
         const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedEx.track({
+        await assert.rejects(fedEx.trackByTrackingNumber({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
@@ -1372,7 +1372,7 @@ test('track (mocked)', async (t) => {
 
         const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedEx.track({
+        await assert.rejects(fedEx.trackByTrackingNumber({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
