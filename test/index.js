@@ -907,13 +907,13 @@ test('rateAndTransitTimes (mocked)', async (t) => {
 
 test('track', { concurrency: true }, async (t) => {
     t.test('should track a shipment by tracking number', async () => {
-        const fedex = new FedEx({
+        const fedEx = new FedEx({
             api_key: process.env.FEDEX_TRACK_API_KEY,
             secret_key: process.env.FEDEX_TRACK_SECRET_KEY,
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedex.track({
+        const body = await async.retry(async () => fedEx.track({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
@@ -1095,9 +1095,9 @@ test('track (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        const body = await fedex.track({
+        const body = await fedEx.track({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
@@ -1256,9 +1256,9 @@ test('track (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        const body = await fedex.track({
+        const body = await fedEx.track({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
@@ -1300,9 +1300,9 @@ test('track (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await fedex.track({
+        await fedEx.track({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
@@ -1339,9 +1339,9 @@ test('track (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.track({
+        await assert.rejects(fedEx.track({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
@@ -1370,9 +1370,9 @@ test('track (mocked)', async (t) => {
             throw new Error(`Unexpected fetch URL: ${url}`);
         });
 
-        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
 
-        await assert.rejects(fedex.track({
+        await assert.rejects(fedEx.track({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
