@@ -3,7 +3,7 @@
         "@stores.com/http-error": "~1.1.0",
         "memory-cache": "~0.2.0"
     },
-    "description": "FedEx REST API client for address validation, ground end of day close, OAuth tokens, rate quotes, shipment cancellation, and shipment creation.",
+    "description": "FedEx REST API client for address validation, ground end of day close, OAuth tokens, rate quotes, shipment cancellation, shipment creation, and tracking.",
     "devDependencies": {
         "@eslint/js": "*",
         "async": "~3.2.0",
@@ -18,7 +18,9 @@
         "logistics",
         "rates",
         "ship",
-        "shipping"
+        "shipping",
+        "track",
+        "tracking"
     ],
     "license": "MIT",
     "name": "@stores.com/fedex",
@@ -34,5 +36,5 @@
         "test": "node --test --test-force-exit --test-reporter=spec",
         "test:only": "node --test --test-force-exit --test-only --test-reporter=spec"
     },
-    "version": "0.4.0"
+    "version": "0.5.0"
 }

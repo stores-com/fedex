@@ -231,6 +231,51 @@ function FedEx(args) {
     };
 
     /**
+     * Track a FedEx shipment via the Track API. The caller supplies the full request
+     * body — `includeDetailedScans`, `trackingInfo` — and the package forwards it
+     * verbatim.
+     *
+     * @param {object} trackRequest - Full Track by Tracking Number request body.
+     * @param {object} [options]
+     * @param {string} [options.customer_transaction_id] - Sent as the `x-customer-transaction-id`
+     *   request header. FedEx echoes this back so callers can correlate requests with responses.
+     * @param {number} [options.timeout=30000] - Request timeout in milliseconds.
+     * @returns {Promise<object>} The parsed response body, including `output.completeTrackResults[]`.
+     * @see https://developer.fedex.com/api/en-us/catalog/track/v1/docs.html
+     */
+    this.track = async (trackRequest, options = {}) => {
+        const accessToken = await this.getAccessToken();
+
+        const headers = {
+            Authorization: `Bearer ${accessToken.access_token}`,
+            'Content-Type': 'application/json'
+        };
+
+        if (options.customer_transaction_id) {
+            headers['x-customer-transaction-id'] = options.customer_transaction_id;
+        }
+
+        const response = await fetch(`${_options.url}/track/v1/trackingnumbers`, {
+            body: JSON.stringify(trackRequest),
+            headers,
+            method: 'POST',
+            signal: AbortSignal.timeout(options.timeout || 30000)
+        });
+
+        if (!response.ok) {
+            throw await HttpError.from(response);
+        }
+
+        const json = await response.json();
+
+        if (json.errors?.length) {
+            throw await HttpError.from(response);
+        }
+
+        return json;
+    };
+
+    /**
      * Call the FedEx Address Validation API. The caller supplies the full request body
      * — `addressesToValidate` and optionally `inEffectAsOfTimestamp` — and the package
      * forwards it verbatim.

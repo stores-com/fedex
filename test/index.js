@@ -905,6 +905,488 @@ test('rateAndTransitTimes (mocked)', async (t) => {
     });
 });
 
+test('track', { concurrency: true }, async (t) => {
+    t.test('should track a shipment by tracking number', async () => {
+        const fedex = new FedEx({
+            api_key: process.env.FEDEX_TRACK_API_KEY,
+            secret_key: process.env.FEDEX_TRACK_SECRET_KEY,
+            url: process.env.FEDEX_URL
+        });
+
+        const body = await async.retry(async () => fedex.track({
+            includeDetailedScans: true,
+            trackingInfo: [{
+                trackingNumberInfo: {
+                    trackingNumber: '613746411451'
+                }
+            }]
+        }));
+
+        assert(body);
+        assert(body.transactionId);
+        assert(body.output);
+        assert(Array.isArray(body.output.completeTrackResults));
+
+        const trackResult = body.output.completeTrackResults[0].trackResults[0];
+
+        assert(trackResult.serviceDetail.type);
+        assert(trackResult.packageDetails.weightAndDimensions.weight[0].value);
+    });
+});
+
+test('track (mocked)', async (t) => {
+    t.test('should return weight, dimensions, and service type for a delivered Ground shipment', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/track/v1/trackingnumbers')) {
+                return new Response(JSON.stringify({
+                    transactionId: 'b450c79e-f286-4ff0-b04c-3a5b1149a923',
+                    output: {
+                        completeTrackResults: [
+                            {
+                                trackingNumber: '794644790138',
+                                trackResults: [
+                                    {
+                                        trackingNumberInfo: {
+                                            trackingNumber: '794644790138',
+                                            carrierCode: 'FDXG',
+                                            trackingNumberUniqueId: '2459622000~794644790138~FX'
+                                        },
+                                        additionalTrackingInfo: {
+                                            hasAssociatedShipments: false,
+                                            nickname: '',
+                                            packageIdentifiers: [
+                                                {
+                                                    type: 'TRACKING_NUMBER_OR_DOORTAG',
+                                                    values: ['794644790138'],
+                                                    trackingNumberUniqueId: '2459622000~794644790138~FX'
+                                                }
+                                            ]
+                                        },
+                                        shipperInformation: {
+                                            address: {
+                                                city: 'MEMPHIS',
+                                                countryCode: 'US',
+                                                countryName: 'United States',
+                                                stateOrProvinceCode: 'TN'
+                                            }
+                                        },
+                                        recipientInformation: {
+                                            address: {
+                                                city: 'NEW YORK',
+                                                countryCode: 'US',
+                                                countryName: 'United States',
+                                                stateOrProvinceCode: 'NY'
+                                            }
+                                        },
+                                        latestStatusDetail: {
+                                            code: 'DL',
+                                            derivedCode: 'DL',
+                                            statusByLocale: 'Delivered',
+                                            description: 'Delivered',
+                                            scanLocation: {
+                                                city: 'NEW YORK',
+                                                countryCode: 'US',
+                                                stateOrProvinceCode: 'NY'
+                                            }
+                                        },
+                                        dateAndTimes: [
+                                            {
+                                                dateTime: '2026-05-14T10:25:00-04:00',
+                                                type: 'ACTUAL_DELIVERY'
+                                            },
+                                            {
+                                                dateTime: '2026-05-10T00:00:00-05:00',
+                                                type: 'SHIP'
+                                            }
+                                        ],
+                                        packageDetails: {
+                                            packagingDescription: {
+                                                description: 'YOUR_PACKAGING',
+                                                type: 'YOUR_PACKAGING'
+                                            },
+                                            physicalPackagingType: 'YOUR_PACKAGING',
+                                            sequenceNumber: '1',
+                                            count: '1',
+                                            weightAndDimensions: {
+                                                weight: [
+                                                    {
+                                                        unit: 'LB',
+                                                        value: '5.0'
+                                                    },
+                                                    {
+                                                        unit: 'KG',
+                                                        value: '2.27'
+                                                    }
+                                                ],
+                                                dimensions: [
+                                                    {
+                                                        height: 8,
+                                                        length: 12,
+                                                        units: 'IN',
+                                                        width: 10
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        serviceDetail: {
+                                            description: 'FedEx Ground',
+                                            shortDescription: 'FG',
+                                            type: 'FEDEX_GROUND'
+                                        },
+                                        scanEvents: [
+                                            {
+                                                date: '2026-05-14T10:25:00-04:00',
+                                                derivedStatus: 'Delivered',
+                                                eventDescription: 'Delivered',
+                                                eventType: 'DL',
+                                                exceptionDescription: '',
+                                                scanLocation: {
+                                                    city: 'NEW YORK',
+                                                    countryCode: 'US',
+                                                    postalCode: '10001',
+                                                    stateOrProvinceCode: 'NY'
+                                                }
+                                            },
+                                            {
+                                                date: '2026-05-14T06:12:00-04:00',
+                                                derivedStatus: 'On FedEx vehicle for delivery',
+                                                eventDescription: 'On FedEx vehicle for delivery',
+                                                eventType: 'OD',
+                                                exceptionDescription: '',
+                                                scanLocation: {
+                                                    city: 'NEW YORK',
+                                                    countryCode: 'US',
+                                                    postalCode: '10001',
+                                                    stateOrProvinceCode: 'NY'
+                                                }
+                                            },
+                                            {
+                                                date: '2026-05-10T18:30:00-05:00',
+                                                derivedStatus: 'Picked up',
+                                                eventDescription: 'Picked up',
+                                                eventType: 'PU',
+                                                exceptionDescription: '',
+                                                scanLocation: {
+                                                    city: 'MEMPHIS',
+                                                    countryCode: 'US',
+                                                    postalCode: '38116',
+                                                    stateOrProvinceCode: 'TN'
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        const body = await fedex.track({
+            includeDetailedScans: true,
+            trackingInfo: [{
+                trackingNumberInfo: {
+                    trackingNumber: '794644790138'
+                }
+            }]
+        });
+
+        const trackResult = body.output.completeTrackResults[0].trackResults[0];
+
+        assert.strictEqual(trackResult.serviceDetail.type, 'FEDEX_GROUND');
+        assert.strictEqual(trackResult.packageDetails.weightAndDimensions.weight[0].value, '5.0');
+        assert.strictEqual(trackResult.packageDetails.weightAndDimensions.weight[0].unit, 'LB');
+        assert.strictEqual(trackResult.packageDetails.weightAndDimensions.dimensions[0].height, 8);
+        assert.strictEqual(trackResult.packageDetails.weightAndDimensions.dimensions[0].length, 12);
+        assert.strictEqual(trackResult.packageDetails.weightAndDimensions.dimensions[0].width, 10);
+        assert.strictEqual(trackResult.latestStatusDetail.code, 'DL');
+    });
+
+    t.test('should return weight without dimensions for an in-transit shipment', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/track/v1/trackingnumbers')) {
+                return new Response(JSON.stringify({
+                    transactionId: '7e1a3b5c-8d2f-4e6a-9c0b-1f2a3b4c5d6e',
+                    output: {
+                        completeTrackResults: [
+                            {
+                                trackingNumber: '61292701107834445671',
+                                trackResults: [
+                                    {
+                                        trackingNumberInfo: {
+                                            trackingNumber: '61292701107834445671',
+                                            carrierCode: 'FDXG',
+                                            trackingNumberUniqueId: '2459674000~61292701107834445671~FX'
+                                        },
+                                        additionalTrackingInfo: {
+                                            hasAssociatedShipments: false,
+                                            nickname: '',
+                                            packageIdentifiers: [
+                                                {
+                                                    type: 'TRACKING_NUMBER_OR_DOORTAG',
+                                                    values: ['61292701107834445671'],
+                                                    trackingNumberUniqueId: '2459674000~61292701107834445671~FX'
+                                                }
+                                            ]
+                                        },
+                                        shipperInformation: {
+                                            address: {
+                                                city: 'LINDON',
+                                                countryCode: 'US',
+                                                countryName: 'United States',
+                                                stateOrProvinceCode: 'UT'
+                                            }
+                                        },
+                                        recipientInformation: {
+                                            address: {
+                                                city: 'CHICAGO',
+                                                countryCode: 'US',
+                                                countryName: 'United States',
+                                                stateOrProvinceCode: 'IL'
+                                            }
+                                        },
+                                        latestStatusDetail: {
+                                            code: 'IT',
+                                            derivedCode: 'IT',
+                                            statusByLocale: 'In transit',
+                                            description: 'In transit',
+                                            scanLocation: {
+                                                city: 'KANSAS CITY',
+                                                countryCode: 'US',
+                                                stateOrProvinceCode: 'MO'
+                                            }
+                                        },
+                                        dateAndTimes: [
+                                            {
+                                                dateTime: '2026-05-16T23:59:59-05:00',
+                                                type: 'ESTIMATED_DELIVERY'
+                                            },
+                                            {
+                                                dateTime: '2026-05-13T00:00:00-06:00',
+                                                type: 'SHIP'
+                                            }
+                                        ],
+                                        packageDetails: {
+                                            packagingDescription: {
+                                                description: 'YOUR_PACKAGING',
+                                                type: 'YOUR_PACKAGING'
+                                            },
+                                            physicalPackagingType: 'YOUR_PACKAGING',
+                                            sequenceNumber: '1',
+                                            count: '1',
+                                            weightAndDimensions: {
+                                                weight: [
+                                                    {
+                                                        unit: 'LB',
+                                                        value: '0.60'
+                                                    },
+                                                    {
+                                                        unit: 'KG',
+                                                        value: '0.27'
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        serviceDetail: {
+                                            description: 'FedEx Ground Economy',
+                                            shortDescription: 'SP',
+                                            type: 'SMART_POST'
+                                        },
+                                        scanEvents: [
+                                            {
+                                                date: '2026-05-14T14:30:00-05:00',
+                                                derivedStatus: 'In transit',
+                                                eventDescription: 'In transit',
+                                                eventType: 'IT',
+                                                exceptionDescription: '',
+                                                scanLocation: {
+                                                    city: 'KANSAS CITY',
+                                                    countryCode: 'US',
+                                                    postalCode: '64161',
+                                                    stateOrProvinceCode: 'MO'
+                                                }
+                                            },
+                                            {
+                                                date: '2026-05-13T18:45:00-06:00',
+                                                derivedStatus: 'Picked up',
+                                                eventDescription: 'Picked up',
+                                                eventType: 'PU',
+                                                exceptionDescription: '',
+                                                scanLocation: {
+                                                    city: 'LINDON',
+                                                    countryCode: 'US',
+                                                    postalCode: '84042',
+                                                    stateOrProvinceCode: 'UT'
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        const body = await fedex.track({
+            includeDetailedScans: true,
+            trackingInfo: [{
+                trackingNumberInfo: {
+                    trackingNumber: '61292701107834445671'
+                }
+            }]
+        });
+
+        const trackResult = body.output.completeTrackResults[0].trackResults[0];
+
+        assert.strictEqual(trackResult.serviceDetail.type, 'SMART_POST');
+        assert.strictEqual(trackResult.packageDetails.weightAndDimensions.weight[0].value, '0.60');
+        assert.strictEqual(trackResult.packageDetails.weightAndDimensions.weight[0].unit, 'LB');
+        assert.strictEqual(trackResult.packageDetails.weightAndDimensions.dimensions, undefined);
+        assert.strictEqual(trackResult.latestStatusDetail.code, 'IT');
+    });
+
+    t.test('should send options.customer_transaction_id as x-customer-transaction-id header and use POST method', async (t) => {
+        let sentHeader;
+        let sentMethod;
+
+        t.mock.method(globalThis, 'fetch', async (url, init) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/track/v1/trackingnumbers')) {
+                sentHeader = init.headers['x-customer-transaction-id'];
+                sentMethod = init.method;
+                return new Response(JSON.stringify({ output: { completeTrackResults: [] }, transactionId: 'mock' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await fedex.track({
+            includeDetailedScans: true,
+            trackingInfo: [{
+                trackingNumberInfo: {
+                    trackingNumber: '794644790138'
+                }
+            }]
+        }, { customer_transaction_id: 'abc-123' });
+
+        assert.strictEqual(sentHeader, 'abc-123');
+        assert.strictEqual(sentMethod, 'POST');
+    });
+
+    t.test('should throw HttpError for 200 response with errors envelope', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/track/v1/trackingnumbers')) {
+                return new Response(JSON.stringify({
+                    errors: [
+                        { code: 'TRACKING.TCNNOTFOUND', message: 'Tracking number cannot be found' }
+                    ],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedex.track({
+            includeDetailedScans: true,
+            trackingInfo: [{
+                trackingNumberInfo: {
+                    trackingNumber: '000000000000'
+                }
+            }]
+        }), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            return true;
+        });
+    });
+
+    t.test('should throw HttpError for non 2xx response', async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/track/v1/trackingnumbers')) {
+                return new Response('', { status: 500, statusText: 'Internal Server Error' });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedex = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedex.track({
+            includeDetailedScans: true,
+            trackingInfo: [{
+                trackingNumberInfo: {
+                    trackingNumber: '794644790138'
+                }
+            }]
+        }), (err) => {
+            assert.strictEqual(err.name, 'HttpError');
+            assert.match(err.message, /^500/);
+            return true;
+        });
+    });
+});
+
 test('validateAddress', { concurrency: true }, async (t) => {
     t.test('should return resolved addresses', async () => {
         const fedex = new FedEx({

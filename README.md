@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@stores.com/fedex)](https://www.npmjs.com/package/@stores.com/fedex)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-FedEx REST API client for Address Validation, Ground End of Day Close, OAuth tokens, Rates and Transit Times, Shipment Cancellation, and Shipment Creation.
+FedEx REST API client for Address Validation, Ground End of Day Close, OAuth tokens, Rates and Transit Times, Shipment Cancellation, Shipment Creation, and Tracking.
 
 ## Installation
 
@@ -177,6 +177,30 @@ const detail = json.output.rateReplyDetails[0].ratedShipmentDetails[0];
 
 console.log(detail.totalNetCharge);
 // 24.17
+```
+
+Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).
+
+### track(trackRequest, options)
+
+Track a FedEx shipment via the Track API. The caller supplies the full request body — `includeDetailedScans`, `trackingInfo` — and the package forwards it verbatim.
+
+See: https://developer.fedex.com/api/en-us/catalog/track/v1/docs.html
+
+```javascript
+const json = await fedex.track({
+    includeDetailedScans: true,
+    trackingInfo: [{
+        trackingNumberInfo: {
+            trackingNumber: '794644790138'
+        }
+    }]
+});
+
+const trackResult = json.output.completeTrackResults[0].trackResults[0];
+
+console.log(trackResult.latestStatusDetail.statusByLocale);
+// 'Delivered'
 ```
 
 Non-2xx responses reject with `HttpError`. If FedEx returns a 200 response carrying a non-empty `errors[]` envelope, the call rejects with an `HttpError` whose message is every `message` joined by `; ` and whose `.json` is the full response body (with the `errors[]` array, codes, and any other fields).
