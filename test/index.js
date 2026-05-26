@@ -148,6 +148,43 @@ test('cancelShipment (mocked)', async (t) => {
         });
     });
 
+    t.test('should include error message from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/shipments/cancel')) {
+                return new Response(JSON.stringify({
+                    errors: [
+                        { code: 'SHIPMENT.CANCEL.FAILURE', message: 'Shipment already tendered' }
+                    ],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedEx.cancelShipment({
+            accountNumber: { value: 'mock' },
+            deletionControl: 'DELETE_ALL_PACKAGES',
+            senderCountryCode: 'US',
+            trackingNumber: '794644790138'
+        }), (err) => {
+            assert.strictEqual(err.message, 'Shipment already tendered');
+            return true;
+        });
+    });
+
     t.test('should throw HttpError for non 2xx response', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
@@ -320,6 +357,42 @@ test('createShipment (mocked)', async (t) => {
             requestedShipment: {}
         }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
+            return true;
+        });
+    });
+
+    t.test('should include error message from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/shipments')) {
+                return new Response(JSON.stringify({
+                    errors: [
+                        { code: 'SHIPMENT.CREATE.FAILURE', message: 'Invalid request' }
+                    ],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedEx.createShipment({
+            accountNumber: { value: 'mock' },
+            labelResponseOptions: 'URL_ONLY',
+            requestedShipment: {}
+        }), (err) => {
+            assert.strictEqual(err.message, 'Invalid request');
             return true;
         });
     });
@@ -534,6 +607,43 @@ test('groundEndOfDayClose (mocked)', async (t) => {
             groundServiceCategory: 'GROUND'
         }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
+            return true;
+        });
+    });
+
+    t.test('should include error message from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/ship/v1/endofday/')) {
+                return new Response(JSON.stringify({
+                    errors: [
+                        { code: 'CLOSE.FAILURE', message: 'No shipments to close' }
+                    ],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedEx.groundEndOfDayClose({
+            accountNumber: { value: 'mock' },
+            closeDate: '2026-05-14',
+            closeReqType: 'GCDR',
+            groundServiceCategory: 'GROUND'
+        }), (err) => {
+            assert.strictEqual(err.message, 'No shipments to close');
             return true;
         });
     });
@@ -833,6 +943,42 @@ test('rateAndTransitTimes (mocked)', async (t) => {
             }
         }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
+            return true;
+        });
+    });
+
+    t.test('should include error messages from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/rate/v1/rates/quotes')) {
+                return new Response(JSON.stringify({
+                    errors: [
+                        { code: 'RATING.INVALID', message: 'Invalid account number' },
+                        { code: 'SERVICE.UNAVAILABLE', message: 'Service is currently unavailable' }
+                    ],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedEx.rateAndTransitTimes({
+            accountNumber: { value: 'mock' },
+            requestedShipment: {}
+        }), (err) => {
+            assert.strictEqual(err.message, 'Invalid account number; Service is currently unavailable');
             return true;
         });
     });
@@ -1350,6 +1496,45 @@ test('trackByTrackingNumber (mocked)', async (t) => {
             }]
         }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
+            return true;
+        });
+    });
+
+    t.test('should include error message from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/track/v1/trackingnumbers')) {
+                return new Response(JSON.stringify({
+                    errors: [
+                        { code: 'TRACKING.TCNNOTFOUND', message: 'Tracking number cannot be found' }
+                    ],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedEx.trackByTrackingNumber({
+            includeDetailedScans: true,
+            trackingInfo: [{
+                trackingNumberInfo: {
+                    trackingNumber: '000000000000'
+                }
+            }]
+        }), (err) => {
+            assert.strictEqual(err.message, 'Tracking number cannot be found');
             return true;
         });
     });
@@ -1949,6 +2134,48 @@ test('validateAddress (mocked)', async (t) => {
             }]
         }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
+            return true;
+        });
+    });
+
+    t.test('should include error message from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+        t.mock.method(globalThis, 'fetch', async (url) => {
+            if (url.endsWith('/oauth/token')) {
+                return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            if (url.endsWith('/address/v1/addresses/resolve')) {
+                return new Response(JSON.stringify({
+                    errors: [
+                        { code: 'ADDRESS.VALIDATION.FAILURE', message: 'Invalid address' }
+                    ],
+                    transactionId: 'mock'
+                }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
+            throw new Error(`Unexpected fetch URL: ${url}`);
+        });
+
+        const fedEx = new FedEx({ api_key: 'mock', secret_key: 'mock' });
+
+        await assert.rejects(fedEx.validateAddress({
+            addressesToValidate: [{
+                address: {
+                    city: 'New York',
+                    countryCode: 'US',
+                    postalCode: '10118',
+                    stateOrProvinceCode: 'NY',
+                    streetLines: ['350 5th Ave']
+                }
+            }]
+        }), (err) => {
+            assert.strictEqual(err.message, 'Invalid address');
             return true;
         });
     });
