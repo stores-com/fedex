@@ -1461,7 +1461,7 @@ test('validateAddress (mocked)', async (t) => {
                                     CountrySupported: 'true',
                                     ValidlyFormed: 'true',
                                     Matched: 'true',
-                                    Resolved: 'true',
+                                    Resolved: true,
                                     Inserted: 'false',
                                     MultiUnitBase: 'true',
                                     ZIP11Match: 'true',
@@ -1503,7 +1503,7 @@ test('validateAddress (mocked)', async (t) => {
         const resolved = body.output.resolvedAddresses[0];
 
         assert.strictEqual(resolved.classification, 'BUSINESS');
-        assert.strictEqual(resolved.attributes.Resolved, 'true');
+        assert.strictEqual(resolved.attributes.Resolved, true);
     });
 
     t.test('should return MIXED for a mixed-use address', async (t) => {
@@ -1554,7 +1554,7 @@ test('validateAddress (mocked)', async (t) => {
                                     CountrySupported: 'true',
                                     ValidlyFormed: 'true',
                                     Matched: 'true',
-                                    Resolved: 'true',
+                                    Resolved: true,
                                     Inserted: 'false',
                                     MultiUnitBase: 'true',
                                     ZIP11Match: 'true',
@@ -1596,7 +1596,7 @@ test('validateAddress (mocked)', async (t) => {
         const resolved = body.output.resolvedAddresses[0];
 
         assert.strictEqual(resolved.classification, 'MIXED');
-        assert.strictEqual(resolved.attributes.Resolved, 'true');
+        assert.strictEqual(resolved.attributes.Resolved, true);
     });
 
     t.test('should return RESIDENTIAL for a residential address', async (t) => {
@@ -1647,7 +1647,7 @@ test('validateAddress (mocked)', async (t) => {
                                     CountrySupported: 'true',
                                     ValidlyFormed: 'true',
                                     Matched: 'true',
-                                    Resolved: 'true',
+                                    Resolved: true,
                                     Inserted: 'false',
                                     MultiUnitBase: 'false',
                                     ZIP11Match: 'true',
@@ -1689,7 +1689,7 @@ test('validateAddress (mocked)', async (t) => {
         const resolved = body.output.resolvedAddresses[0];
 
         assert.strictEqual(resolved.classification, 'RESIDENTIAL');
-        assert.strictEqual(resolved.attributes.Resolved, 'true');
+        assert.strictEqual(resolved.attributes.Resolved, true);
     });
 
     t.test('should return Resolved: false for a non-deliverable address', async (t) => {
@@ -1738,7 +1738,7 @@ test('validateAddress (mocked)', async (t) => {
                                     Matched: 'false',
                                     StreetValidated: 'false',
                                     MissingOrAmbiguousDirectional: 'false',
-                                    Resolved: 'false',
+                                    Resolved: false,
                                     StreetRangeValidated: 'false',
                                     AddressType: 'NORMALIZED',
                                     Inserted: 'true',
@@ -1773,7 +1773,7 @@ test('validateAddress (mocked)', async (t) => {
         const resolved = body.output.resolvedAddresses[0];
 
         assert.strictEqual(resolved.classification, 'UNKNOWN');
-        assert.strictEqual(resolved.attributes.Resolved, 'false');
+        assert.strictEqual(resolved.attributes.Resolved, false);
     });
 
     t.test('should return UNKNOWN for an unclassified address', async (t) => {
@@ -1832,7 +1832,7 @@ test('validateAddress (mocked)', async (t) => {
                                     Matched: 'true',
                                     RRConversion: 'false',
                                     ValidMultiUnit: 'false',
-                                    Resolved: 'true',
+                                    Resolved: true,
                                     AddressType: 'STANDARDIZED',
                                     Inserted: 'true',
                                     InterpolatedStreetAddress: 'true'
@@ -1866,7 +1866,7 @@ test('validateAddress (mocked)', async (t) => {
         const resolved = body.output.resolvedAddresses[0];
 
         assert.strictEqual(resolved.classification, 'UNKNOWN');
-        assert.strictEqual(resolved.attributes.Resolved, 'true');
+        assert.strictEqual(resolved.attributes.Resolved, true);
     });
 
     t.test('should send options.customer_transaction_id as x-customer-transaction-id header', async (t) => {
