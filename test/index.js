@@ -148,7 +148,7 @@ test('cancelShipment (mocked)', async (t) => {
         });
     });
 
-    t.test('should include error message from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+    t.test('should include error message from 200 errors envelope', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
                 return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
@@ -361,7 +361,7 @@ test('createShipment (mocked)', async (t) => {
         });
     });
 
-    t.test('should include error message from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+    t.test('should include error message from 200 errors envelope', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
                 return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
@@ -611,7 +611,7 @@ test('groundEndOfDayClose (mocked)', async (t) => {
         });
     });
 
-    t.test('should include error message from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+    t.test('should include error message from 200 errors envelope', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
                 return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
@@ -947,7 +947,7 @@ test('rateAndTransitTimes (mocked)', async (t) => {
         });
     });
 
-    t.test('should include error messages from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+    t.test('should include error messages from 200 errors envelope', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
                 return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
@@ -1500,7 +1500,7 @@ test('trackByTrackingNumber (mocked)', async (t) => {
         });
     });
 
-    t.test('should include error message from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+    t.test('should include error message from 200 errors envelope', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
                 return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
@@ -2138,7 +2138,7 @@ test('validateAddress (mocked)', async (t) => {
         });
     });
 
-    t.test('should include error message from 200 errors envelope', { todo: 'response body consumed before HttpError.from' }, async (t) => {
+    t.test('should include error message from 200 errors envelope', async (t) => {
         t.mock.method(globalThis, 'fetch', async (url) => {
             if (url.endsWith('/oauth/token')) {
                 return new Response(JSON.stringify({ access_token: 'mock', expires_in: 3600, token_type: 'bearer' }), {
