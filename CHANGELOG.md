@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+- Fix error messages lost when a 200 response contains an `errors[]` envelope. Previously, `response.json()` consumed the body before `HttpError.from(response)` could read it, so the error message fell back to `"200 OK"`. Now passes the already-parsed JSON via `HttpError.from(response, json)` (requires `@stores.com/http-error@1.2.0`).
+
 ## 0.5.0
 
 - Add `trackByTrackingNumber(trackRequest, options)` — calls the FedEx Track API (`POST /track/v1/trackingnumbers`). Same passthrough pattern as the other methods: caller supplies the full request body, the package forwards it verbatim. Supports `options.customer_transaction_id` and `options.timeout`. Non-2xx responses and 200-with-`errors[]` envelopes both reject with `HttpError`.
