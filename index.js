@@ -46,7 +46,7 @@ function FedEx(args) {
         const json = await response.json();
 
         if (json.errors?.length) {
-            throw await HttpError.from(response);
+            throw await HttpError.from(response, json);
         }
 
         return json;
@@ -91,7 +91,7 @@ function FedEx(args) {
         const json = await response.json();
 
         if (json.errors?.length) {
-            throw await HttpError.from(response);
+            throw await HttpError.from(response, json);
         }
 
         return json;
@@ -179,7 +179,7 @@ function FedEx(args) {
         const json = await response.json();
 
         if (json.errors?.length) {
-            throw await HttpError.from(response);
+            throw await HttpError.from(response, json);
         }
 
         return json;
@@ -224,7 +224,7 @@ function FedEx(args) {
         const json = await response.json();
 
         if (json.errors?.length) {
-            throw await HttpError.from(response);
+            throw await HttpError.from(response, json);
         }
 
         return json;
@@ -269,7 +269,7 @@ function FedEx(args) {
         const json = await response.json();
 
         if (json.errors?.length) {
-            throw await HttpError.from(response);
+            throw await HttpError.from(response, json);
         }
 
         return json;
@@ -314,7 +314,7 @@ function FedEx(args) {
         const json = await response.json();
 
         if (json.errors?.length) {
-            throw await HttpError.from(response);
+            throw await HttpError.from(response, json);
         }
 
         return json;
