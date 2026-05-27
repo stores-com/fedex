@@ -144,6 +144,8 @@ test('cancelShipment (mocked)', async (t) => {
             trackingNumber: '794644790138'
         }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
+            assert.ok(err.json?.errors?.length, 'errors[] envelope should be captured');
+            assert.notStrictEqual(err.message, '200 ', 'message should reflect the errors, not the bare status');
             return true;
         });
     });
@@ -320,6 +322,8 @@ test('createShipment (mocked)', async (t) => {
             requestedShipment: {}
         }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
+            assert.ok(err.json?.errors?.length, 'errors[] envelope should be captured');
+            assert.notStrictEqual(err.message, '200 ', 'message should reflect the errors, not the bare status');
             return true;
         });
     });
@@ -534,6 +538,8 @@ test('groundEndOfDayClose (mocked)', async (t) => {
             groundServiceCategory: 'GROUND'
         }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
+            assert.ok(err.json?.errors?.length, 'errors[] envelope should be captured');
+            assert.notStrictEqual(err.message, '200 ', 'message should reflect the errors, not the bare status');
             return true;
         });
     });
@@ -833,6 +839,8 @@ test('rateAndTransitTimes (mocked)', async (t) => {
             }
         }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
+            assert.ok(err.json?.errors?.length, 'errors[] envelope should be captured');
+            assert.notStrictEqual(err.message, '200 ', 'message should reflect the errors, not the bare status');
             return true;
         });
     });
@@ -1350,6 +1358,8 @@ test('trackByTrackingNumber (mocked)', async (t) => {
             }]
         }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
+            assert.ok(err.json?.errors?.length, 'errors[] envelope should be captured');
+            assert.notStrictEqual(err.message, '200 ', 'message should reflect the errors, not the bare status');
             return true;
         });
     });
@@ -1949,6 +1959,8 @@ test('validateAddress (mocked)', async (t) => {
             }]
         }), (err) => {
             assert.strictEqual(err.name, 'HttpError');
+            assert.ok(err.json?.errors?.length, 'errors[] envelope should be captured');
+            assert.notStrictEqual(err.message, '200 ', 'message should reflect the errors, not the bare status');
             return true;
         });
     });
