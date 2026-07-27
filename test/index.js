@@ -5,6 +5,11 @@ const async = require('async');
 
 const FedEx = require('../index');
 
+// The FedEx sandbox intermittently answers 503 SERVICE.UNAVAILABLE.ERROR. async.retry defaults to
+// five attempts at a zero interval, so every attempt lands inside the same outage window and the
+// retry buys nothing. Back off between attempts instead: 2s, 4s, 8s.
+const retryOptions = { interval: (retryCount) => 1000 * Math.pow(2, retryCount), times: 4 };
+
 test('cancelShipment', { concurrency: true }, async (t) => {
     t.test('should cancel a previously created shipment', async () => {
         const fedEx = new FedEx({
@@ -13,7 +18,7 @@ test('cancelShipment', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const shipment = await async.retry(async () => fedEx.createShipment({
+        const shipment = await async.retry(retryOptions, async () => fedEx.createShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             labelResponseOptions: 'URL_ONLY',
             requestedShipment: {
@@ -61,7 +66,7 @@ test('cancelShipment', { concurrency: true }, async (t) => {
 
         assert(trackingNumber);
 
-        const body = await async.retry(async () => fedEx.cancelShipment({
+        const body = await async.retry(retryOptions, async () => fedEx.cancelShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             deletionControl: 'DELETE_ALL_PACKAGES',
             senderCountryCode: 'US',
@@ -189,7 +194,7 @@ test('createShipment', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedEx.createShipment({
+        const body = await async.retry(retryOptions, async () => fedEx.createShipment({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             labelResponseOptions: 'URL_ONLY',
             requestedShipment: {
@@ -416,7 +421,7 @@ test('groundEndOfDayClose', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedEx.groundEndOfDayClose({
+        const body = await async.retry(retryOptions, async () => fedEx.groundEndOfDayClose({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             closeDate: new Date().toISOString().slice(0, 10),
             closeReqType: 'GCDR',
@@ -583,7 +588,7 @@ test('rateAndTransitTimes', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedEx.rateAndTransitTimes({
+        const body = await async.retry(retryOptions, async () => fedEx.rateAndTransitTimes({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             requestedShipment: {
                 packagingType: 'YOUR_PACKAGING',
@@ -640,7 +645,7 @@ test('rateAndTransitTimes', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedEx.rateAndTransitTimes({
+        const body = await async.retry(retryOptions, async () => fedEx.rateAndTransitTimes({
             accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER },
             requestedShipment: {
                 packagingType: 'YOUR_PACKAGING',
@@ -921,7 +926,7 @@ test('trackByTrackingNumber', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedEx.trackByTrackingNumber({
+        const body = await async.retry(retryOptions, async () => fedEx.trackByTrackingNumber({
             includeDetailedScans: true,
             trackingInfo: [{
                 trackingNumberInfo: {
@@ -1405,7 +1410,7 @@ test('validateAddress', { concurrency: true }, async (t) => {
             url: process.env.FEDEX_URL
         });
 
-        const body = await async.retry(async () => fedEx.validateAddress({
+        const body = await async.retry(retryOptions, async () => fedEx.validateAddress({
             addressesToValidate: [{
                 address: {
                     city: 'Chicago',
