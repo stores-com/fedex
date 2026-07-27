@@ -1,4 +1,5 @@
 const assert = require('node:assert');
+const http = require('node:http');
 const test = require('node:test');
 
 const async = require('async');
@@ -388,15 +389,30 @@ test('getAccessToken', { concurrency: true }, async (t) => {
     });
 
     t.test('should return an error for non 200 status code', async () => {
-        const fedEx = new FedEx({
-            url: 'https://httpbin.org/status/500#'
+        // This used to point at https://httpbin.org/status/500, but that host is unreliable: it
+        // answered in 20886ms on run 30162824011 and returned '503 Service Temporarily Unavailable'
+        // instead of a 500 on run 30281894500, failing the /^500/ assertion. Serve the 500 locally
+        // so the test covers our error handling rather than a third party's uptime.
+        const server = http.createServer((req, res) => {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end('Internal Server Error');
         });
 
-        await assert.rejects(fedEx.getAccessToken(), (err) => {
-            assert.strictEqual(err.name, 'HttpError');
-            assert.match(err.message, /^500/);
-            return true;
-        });
+        await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+
+        try {
+            const fedEx = new FedEx({
+                url: `http://127.0.0.1:${server.address().port}/#`
+            });
+
+            await assert.rejects(fedEx.getAccessToken(), (err) => {
+                assert.strictEqual(err.name, 'HttpError');
+                assert.match(err.message, /^500/);
+                return true;
+            });
+        } finally {
+            server.close();
+        }
     });
 
     t.test('should return the same access token on subsequent calls', async () => {
