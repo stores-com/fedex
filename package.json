@@ -5,9 +5,9 @@
     },
     "description": "FedEx REST API client for address validation, ground end of day close, OAuth tokens, rate quotes, shipment cancellation, shipment creation, and tracking.",
     "devDependencies": {
-        "@eslint/js": "*",
+        "@eslint/js": "~10.0.1",
         "async": "~3.2.0",
-        "globals": "*"
+        "globals": "~17.6.0"
     },
     "keywords": [
         "address-validation",
