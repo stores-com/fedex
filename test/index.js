@@ -384,7 +384,7 @@ test('getAccessToken', { concurrency: true }, async (t) => {
 
     t.test('should return an error for non 200 status code', async () => {
         const fedEx = new FedEx({
-            url: 'https://httpbin.org/status/500#'
+            url: 'https://httpbingo.org/status/500#'
         });
 
         await assert.rejects(fedEx.getAccessToken(), (err) => {
